@@ -1,13 +1,17 @@
-package com.example.java_skat;//package pl.twojprojekt.skat.ui.view;
+package com.example.java_skat;
 
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
-//import pl.twojprojekt.skat.model.Karta;
+import pl.skat.core.Karta;
 
-import pl.skat.core.*;
+import java.util.Objects;
 
 public class CardView extends StackPane {
+
+    private static final double CARD_WIDTH = 70;
+    private static final double CARD_HEIGHT = 105;
 
     private final Karta karta;
     private boolean selected = false;
@@ -15,19 +19,22 @@ public class CardView extends StackPane {
     public CardView(Karta karta) {
         this.karta = karta;
 
-        setPrefSize(70, 105);
-        setMinSize(70, 105);
-        setMaxSize(70, 105);
+        setPrefSize(CARD_WIDTH, CARD_HEIGHT);
+        setMinSize(CARD_WIDTH, CARD_HEIGHT);
+        setMaxSize(CARD_WIDTH, CARD_HEIGHT);
 
         getStyleClass().add("card");
-
-        Label label = new Label(formatCard(karta));
-        label.getStyleClass().add("card-label");
-
         setAlignment(Pos.CENTER);
-        getChildren().add(label);
 
-        setOnMouseClicked(event -> toggleSelected());
+        Image image = loadImage(CardImagePath.forCard(karta));
+
+        ImageView imageView = new ImageView(image);
+        imageView.setFitWidth(CARD_WIDTH);
+        imageView.setFitHeight(CARD_HEIGHT);
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(false);
+
+        getChildren().add(imageView);
     }
 
     public Karta getKarta() {
@@ -41,8 +48,10 @@ public class CardView extends StackPane {
             if (!getStyleClass().contains("card-selected")) {
                 getStyleClass().add("card-selected");
             }
+            setTranslateY(-15);
         } else {
             getStyleClass().remove("card-selected");
+            setTranslateY(0);
         }
     }
 
@@ -50,11 +59,12 @@ public class CardView extends StackPane {
         return selected;
     }
 
-    private void toggleSelected() {
-        setSelected(!selected);
-    }
-
-    private String formatCard(Karta karta) {
-        return karta.figura() + "\n" + karta.kolor();
+    private Image loadImage(String path) {
+        return new Image(
+                Objects.requireNonNull(
+                        getClass().getResourceAsStream(path),
+                        "Nie znaleziono obrazka karty: " + path
+                )
+        );
     }
 }
