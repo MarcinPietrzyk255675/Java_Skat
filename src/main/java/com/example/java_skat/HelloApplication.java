@@ -11,30 +11,29 @@ import java.util.List;
 
 public class HelloApplication extends Application {
 
-    @Override
-    public void start(Stage stage) {
-        SkatTableView tableView = new SkatTableView();
+	@Override
+	public void start(Stage stage) {
+		SkatTableView tableView = new SkatTableView();
 
-        tableView.setPlayerHand(List.of(
-                new Karta(Kolor.TREFL, Figura.AS),
-                new Karta(Kolor.TREFL, Figura.DZIESIATKA),
-                new Karta(Kolor.PIK, Figura.KROL),
-                new Karta(Kolor.SERCE, Figura.KROLOWA),
-                new Karta(Kolor.DZWONEK, Figura.JOPEK)
-        ));
+		tableView.setPlayerHand(List.of(
 
-        tableView.setSkatHidden();
-        tableView.setCurrentTrick(List.of());
-        tableView.setOpponentCardCounts(10, 10);
+				new Karta(Kolor.TREFL, Figura.AS), new Karta(Kolor.TREFL, Figura.DZIESIATKA),
+				new Karta(Kolor.TREFL, Figura.KROL), new Karta(Kolor.PIK, Figura.KROL),
+				new Karta(Kolor.PIK, Figura.DZIESIATKA), new Karta(Kolor.PIK, Figura.DZIEWIATKA),
+				new Karta(Kolor.SERCE, Figura.KROLOWA), new Karta(Kolor.SERCE, Figura.OSEMKA),
+				new Karta(Kolor.DZWONEK, Figura.JOPEK), new Karta(Kolor.DZWONEK, Figura.SIODEMKA)));
 
-        tableView.setOnPlayCard(karta -> {
-            System.out.println("Gracz chce zagrać kartę: " + karta);
-        });
 
-        Scene scene = new Scene(tableView, 1000, 700);
+		tableView.setSkatHidden();
+		tableView.setCurrentTrick(List.of());
+		tableView.setOpponentCardCounts(10, 10);
 
-        stage.setTitle("Skat");
-        stage.setScene(scene);
-        stage.show();
-    }
+		tableView.setOnPlayCard(karta -> System.out.println("Gracz chce zagrać kartę: " + karta));
+
+		Scene scene = new Scene(tableView, 1000, 700);
+
+		stage.setTitle("Skat");
+		stage.setScene(scene);
+		stage.show();
+	}
 }
