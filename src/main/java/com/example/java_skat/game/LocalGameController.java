@@ -2,6 +2,7 @@ package com.example.java_skat.game;
 
 import pl.skat.core.Gracz;
 import pl.skat.core.Karta;
+import pl.skat.core.Kolor;
 import pl.skat.core.RodzajGry;
 import pl.skat.core.Rozdanie;
 import pl.skat.core.Skat;
@@ -23,8 +24,8 @@ public class LocalGameController {
     private final Gracz opponentTwo = new Gracz();
 
     private Rozdanie round;
+    private GameContract contract;
     private RodzajGry gameType;
-    private final List<Karta> initialPlayerHand = new ArrayList<>();
     private final List<Karta> playerHand = new ArrayList<>();
     private final List<Karta> opponentOneHand = new ArrayList<>();
     private final List<Karta> opponentTwoHand = new ArrayList<>();
@@ -53,7 +54,6 @@ public class LocalGameController {
     public final void startNewDeal() {
         List<Karta> deck = DeckFactory.shuffledDeck();
 
-        initialPlayerHand.clear();
         playerHand.clear();
         opponentOneHand.clear();
         opponentTwoHand.clear();
@@ -65,15 +65,17 @@ public class LocalGameController {
         opponentMaximumBids.clear();
 
         playerHand.addAll(deck.subList(0, HAND_SIZE));
-        initialPlayerHand.addAll(playerHand);
         opponentOneHand.addAll(deck.subList(HAND_SIZE, HAND_SIZE * 2));
         opponentTwoHand.addAll(deck.subList(HAND_SIZE * 2, HAND_SIZE * 3));
         skatCards.addAll(deck.subList(HAND_SIZE * 3, HAND_SIZE * 3 + SKAT_SIZE));
 
+        contract = GameContract.defaultGrand();
+        gameType = contract.toCore();
+        sortHands();
+
         opponentMaximumBids.put(PlayerSeat.OPPONENT_ONE, BiddingStrength.estimateMaximumBid(opponentOneHand));
         opponentMaximumBids.put(PlayerSeat.OPPONENT_TWO, BiddingStrength.estimateMaximumBid(opponentTwoHand));
 
-        gameType = createDefaultGameType();
         round = null;
         phase = GamePhase.BIDDING;
         nextPlayer = PlayerSeat.DECLARER;
@@ -116,9 +118,72 @@ public class LocalGameController {
         }
     }
 
+    public void confirmContract(GameContract selectedContract) {
+        if (phase != GamePhase.CONTRACT_SELECTION) {
+            status = "Rodzaj gry wybierasz dopiero po wygraniu licytacji.";
+            return;
+        }
+
+        contract = selectedContract;
+        gameType = contract.toCore();
+        sortHands();
+
+        if (contract.hand()) {
+            configureCoreRound();
+            startCardPlay("Wybrałeś " + contract.displayName()
+                    + ". To gra z ręki, więc nie dobierasz skata. Wychodzisz do pierwszej lewy.");
+            return;
+        }
+
+        playerHand.addAll(skatCards);
+        skatCards.clear();
+        skatVisible = true;
+        phase = GamePhase.SKAT_EXCHANGE;
+        sortHands();
+        status = "Wybrałeś " + contract.displayName()
+                + ". Dobrałeś skat do ręki. Wybierz dwie karty i kliknij \"Odłóż kartę\".";
+    }
+
+    public void discardSelectedCardToSkat(Karta card) {
+        if (phase != GamePhase.SKAT_EXCHANGE) {
+            status = "Karty do skata odkładasz tylko po dobraniu skata.";
+            return;
+        }
+
+        if (!playerHand.contains(card)) {
+            status = "Nie możesz odłożyć tej karty, bo nie ma jej w ręce.";
+            return;
+        }
+
+        playerHand.remove(card);
+        skatCards.add(card);
+        sortHands();
+
+        int remaining = SKAT_SIZE - skatCards.size();
+        if (remaining > 0) {
+            status = "Odłożono " + CardFormatter.format(card)
+                    + ". Odłóż jeszcze " + remaining + " kartę do skata.";
+            return;
+        }
+
+        configureCoreRound();
+        startCardPlay("Odłożyłeś dwie karty do skata. Grasz " + contract.displayName()
+                + ". Wychodzisz do pierwszej lewy.");
+    }
+
     public void playCard(Karta card) {
         if (phase == GamePhase.BIDDING) {
             status = "Najpierw zakończ licytację.";
+            return;
+        }
+
+        if (phase == GamePhase.CONTRACT_SELECTION) {
+            status = "Najpierw wybierz rodzaj gry.";
+            return;
+        }
+
+        if (phase == GamePhase.SKAT_EXCHANGE) {
+            status = "Najpierw odłóż dwie karty do skata.";
             return;
         }
 
@@ -152,21 +217,6 @@ public class LocalGameController {
         }
     }
 
-    public void showSkat() {
-        if (phase == GamePhase.BIDDING) {
-            status = "Skat można zobaczyć dopiero po wygraniu licytacji.";
-            return;
-        }
-
-        if (finished) {
-            status = "Rozdanie jest zakończone.";
-            return;
-        }
-
-        skatVisible = true;
-        status = "Skat odkryty. W tym prototypie nie dokładam go do ręki, bo skat-core wymaga 10 kart początkowych gracza.";
-    }
-
     public void pass() {
         if (phase == GamePhase.BIDDING) {
             passBidding();
@@ -179,12 +229,12 @@ public class LocalGameController {
 
         phase = GamePhase.FINISHED;
         finished = true;
-        status = "Spasowałeś. Kliknij \"Nowe rozdanie\", aby zacząć od nowa.";
+        status = "Spasowałeś/poddałeś rozdanie. Kliknij \"Nowe rozdanie\", aby zacząć od nowa.";
     }
 
     public GameSnapshot snapshot() {
         return new GameSnapshot(
-                List.copyOf(playerHand),
+                CardSorter.sortedCopy(playerHand, gameType),
                 List.copyOf(currentTrickCards()),
                 List.copyOf(skatCards),
                 skatVisible,
@@ -195,6 +245,8 @@ public class LocalGameController {
                 currentBid,
                 nextBidValue(),
                 highestBidder == null ? "brak" : highestBidder.displayName(),
+                contract == null ? "brak" : contract.displayName(),
+                phase == GamePhase.SKAT_EXCHANGE ? SKAT_SIZE - skatCards.size() : 0,
                 status,
                 finished
         );
@@ -225,7 +277,7 @@ public class LocalGameController {
 
         if (bothOpponentsPassed()) {
             if (highestBidder == PlayerSeat.DECLARER) {
-                startPlayAfterWonBidding(biddingLog.toString());
+                startContractSelectionAfterWonBidding(biddingLog.toString());
             } else {
                 finishAfterLostBidding(biddingLog.toString());
             }
@@ -247,14 +299,13 @@ public class LocalGameController {
                 + ". Kliknij \"Nowe rozdanie\", aby zagrać kolejne rozdanie.";
     }
 
-    private void startPlayAfterWonBidding(String biddingLog) {
-        phase = GamePhase.PLAYING;
+    private void startContractSelectionAfterWonBidding(String biddingLog) {
+        phase = GamePhase.CONTRACT_SELECTION;
         finished = false;
         nextPlayer = PlayerSeat.DECLARER;
-        configureCoreRound(currentBid);
         status = biddingLog
                 + "Wygrałeś licytację za " + currentBid
-                + ". W tej wersji prototypu gra jest automatycznie ustawiona jako Grand. Wychodzisz do pierwszej lewy.";
+                + ". Wybierz rodzaj gry i opcje. Jeśli nie zaznaczysz hand, po zatwierdzeniu dobierzesz skat i odłożysz dwie karty.";
     }
 
     private void finishAfterLostBidding(String biddingLog) {
@@ -264,6 +315,14 @@ public class LocalGameController {
                 + "Licytację wygrał " + highestBidder.displayName()
                 + " za " + currentBid
                 + ". W tej wersji prototypu grę rozgrywasz tylko wtedy, gdy licytację wygra gracz.";
+    }
+
+    private void startCardPlay(String message) {
+        phase = GamePhase.PLAYING;
+        finished = false;
+        skatVisible = !contract.hand();
+        nextPlayer = PlayerSeat.DECLARER;
+        status = message;
     }
 
     private void playAutomaticCardsUntilPlayerTurn() {
@@ -322,7 +381,8 @@ public class LocalGameController {
         finished = true;
 
         String outcome = result.wygrana ? "wygrana" : "przegrana";
-        status = "Koniec rozdania. Licytacja: " + currentBid
+        status = "Koniec rozdania. Gra: " + contract.displayName()
+                + ". Licytacja: " + currentBid
                 + ". Lewy gracza: " + declarerWonTricks
                 + ", lewy przeciwników: " + opponentsWonTricks
                 + ". Karty zebrane przez gracza: " + declarerCollectedCards.size()
@@ -383,8 +443,15 @@ public class LocalGameController {
         return Integer.toString(nextBid);
     }
 
-    private void configureCoreRound(int winningBid) {
-        declarer.ustawPosiadaneKarty(new ArrayList<>(initialPlayerHand));
+    private void configureCoreRound() {
+        if (playerHand.size() != HAND_SIZE) {
+            throw new IllegalStateException("Przed rozpoczęciem gry gracz musi mieć dokładnie 10 kart w ręce.");
+        }
+        if (skatCards.size() != SKAT_SIZE) {
+            throw new IllegalStateException("Przed rozpoczęciem gry skat musi mieć dokładnie 2 karty.");
+        }
+
+        declarer.ustawPosiadaneKarty(new ArrayList<>(playerHand));
 
         Skat skat = new Skat();
         skat.ustawKarta1(skatCards.get(0));
@@ -393,12 +460,12 @@ public class LocalGameController {
         round = new Rozdanie(declarer, opponentOne, opponentTwo);
         round.ustawSkat(skat);
         round.ustawRodzajGry(gameType);
-        round.ustawWartoscLicytacji(winningBid);
+        round.ustawWartoscLicytacji(currentBid);
     }
 
-    private RodzajGry createDefaultGameType() {
-        RodzajGry type = new RodzajGry();
-        type.typ = TypGry.GRAND;
-        return type;
+    private void sortHands() {
+        CardSorter.sort(playerHand, gameType);
+        CardSorter.sort(opponentOneHand, gameType);
+        CardSorter.sort(opponentTwoHand, gameType);
     }
 }

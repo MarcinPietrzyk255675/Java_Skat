@@ -16,6 +16,8 @@ public record GameSnapshot(
         int currentBid,
         int nextBid,
         String highestBidderName,
+        String contractName,
+        int cardsToDiscard,
         String status,
         boolean finished
 ) {
