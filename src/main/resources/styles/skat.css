@@ -1,0 +1,61 @@
+.skat-table {
+    -fx-background-color: #154734;
+    -fx-font-family: "SansSerif";
+}
+
+.table-center {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-background-radius: 24;
+    -fx-border-color: rgba(255, 255, 255, 0.18);
+    -fx-border-radius: 24;
+}
+
+.status-label {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+.opponent-label, .section-label, .small-info-label {
+    -fx-text-fill: white;
+    -fx-font-size: 15px;
+}
+
+.section-label {
+    -fx-font-weight: bold;
+}
+
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #222222;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 8, 0, 0, 2);
+}
+
+.card-selected {
+    -fx-border-color: gold;
+    -fx-border-width: 3;
+}
+
+.card-back {
+    -fx-background-color: #273c75;
+}
+
+.card-fallback-label {
+    -fx-text-fill: #111111;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-padding: 8;
+}
+
+.card-back .card-fallback-label {
+    -fx-text-fill: white;
+}
+
+.button {
+    -fx-font-size: 14px;
+    -fx-padding: 8 14;
+}

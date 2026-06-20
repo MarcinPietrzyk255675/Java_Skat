@@ -23,6 +23,7 @@
             <version>21.0.6</version>
         </dependency>
 
+        <!-- Projekt_PIO zainstalowany lokalnie przez: mvn clean install -->
         <dependency>
             <groupId>pl.skat</groupId>
             <artifactId>skat-core</artifactId>
@@ -31,14 +32,7 @@
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
+            <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
@@ -50,6 +44,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <compilerArgs>--enable-preview</compilerArgs>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -62,5 +61,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

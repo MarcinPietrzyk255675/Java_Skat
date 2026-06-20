@@ -1,43 +1,66 @@
 package com.example.java_skat;
 
+import com.example.java_skat.game.LocalGameController;
+import com.example.java_skat.ui.SkatTableView;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import pl.skat.core.Figura;
-import pl.skat.core.Karta;
-import pl.skat.core.Kolor;
 
-import java.util.List;
+import java.net.URL;
 
 public class SkatApplication extends Application {
+    private static final int WIDTH = 1100;
+    private static final int HEIGHT = 720;
 
-	public static final int WIDTH = 1000;
-	public static final int HEIGHT = 700;
-	public static final int STARTING_CARDS_NUMBER = 10;
+    private LocalGameController gameController;
+    private SkatTableView tableView;
 
-	@Override
-	public void start(Stage stage) {
-		SkatTableView tableView = new SkatTableView();
+    @Override
+    public void start(Stage stage) {
+        gameController = new LocalGameController();
+        tableView = new SkatTableView();
 
-		tableView.setPlayerHand(List.of(
+        configureActions();
+        renderCurrentState();
 
-				new Karta(Kolor.TREFL, Figura.AS), new Karta(Kolor.TREFL, Figura.DZIESIATKA),
-				new Karta(Kolor.TREFL, Figura.KROL), new Karta(Kolor.PIK, Figura.KROL),
-				new Karta(Kolor.PIK, Figura.DZIESIATKA), new Karta(Kolor.PIK, Figura.DZIEWIATKA),
-				new Karta(Kolor.SERCE, Figura.KROLOWA), new Karta(Kolor.SERCE, Figura.OSEMKA),
-				new Karta(Kolor.DZWONEK, Figura.JOPEK), new Karta(Kolor.DZWONEK, Figura.SIODEMKA)));
+        Scene scene = new Scene(tableView, WIDTH, HEIGHT);
+        addStylesheet(scene);
 
+        stage.setTitle("Java Skat");
+        stage.setScene(scene);
+        stage.show();
+    }
 
-		tableView.setSkatHidden();
-		tableView.setCurrentTrick(List.of());
-		tableView.setOpponentCardCounts(STARTING_CARDS_NUMBER, STARTING_CARDS_NUMBER);
+    private void configureActions() {
+        tableView.setOnPlayCard(card -> {
+            gameController.playCard(card);
+            renderCurrentState();
+        });
 
-		tableView.setOnPlayCard(karta -> System.out.println("Gracz chce zagrać kartę: " + karta));
+        tableView.setOnShowSkat(() -> {
+            gameController.showSkat();
+            renderCurrentState();
+        });
 
-		Scene scene = new Scene(tableView, WIDTH, HEIGHT);
+        tableView.setOnPass(() -> {
+            gameController.pass();
+            renderCurrentState();
+        });
 
-		stage.setTitle("Skat");
-		stage.setScene(scene);
-		stage.show();
-	}
+        tableView.setOnNewDeal(() -> {
+            gameController.startNewDeal();
+            renderCurrentState();
+        });
+    }
+
+    private void renderCurrentState() {
+        tableView.render(gameController.snapshot());
+    }
+
+    private void addStylesheet(Scene scene) {
+        URL stylesheet = getClass().getResource("/styles/skat.css");
+        if (stylesheet != null) {
+            scene.getStylesheets().add(stylesheet.toExternalForm());
+        }
+    }
 }
