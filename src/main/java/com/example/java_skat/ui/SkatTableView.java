@@ -27,6 +27,7 @@ public class SkatTableView extends BorderPane {
     private final PlayerHandView playerHandView = new PlayerHandView();
     private final HBox currentTrickBox = new HBox(12);
     private final HBox skatBox = new HBox(8);
+    private final HBox contractControls = new HBox(8);
 
     private final Label topOpponentLabel = new Label();
     private final Label leftOpponentLabel = new Label();
@@ -36,6 +37,8 @@ public class SkatTableView extends BorderPane {
     private final Label collectedCardsLabel = new Label();
 
     private final Button bidButton = new Button("Licytuj");
+    private final Button takeSkatButton = new Button("Weź skat");
+    private final Button chooseGameWithoutSkatButton = new Button("Gra bez skata");
     private final Button confirmContractButton = new Button("Zatwierdź grę");
     private final Button discardCardButton = new Button("Odłóż kartę");
     private final Button playCardButton = new Button("Zagraj kartę");
@@ -52,9 +55,12 @@ public class SkatTableView extends BorderPane {
     private Consumer<Karta> onPlayCard;
     private Consumer<Karta> onDiscardCard;
     private Consumer<GameContract> onConfirmContract;
+    private Runnable onTakeSkat;
+    private Runnable onChooseGameWithoutSkat;
     private Runnable onBid;
     private Runnable onPass;
     private Runnable onNewDeal;
+    private GameSnapshot lastSnapshot;
 
     public SkatTableView() {
         getStyleClass().add("skat-table");
@@ -66,6 +72,7 @@ public class SkatTableView extends BorderPane {
     }
 
     public void render(GameSnapshot snapshot) {
+        lastSnapshot = snapshot;
         playerHandView.setCards(snapshot.playerHand());
         setCurrentTrick(snapshot.currentTrick());
         setSkat(snapshot.skat(), snapshot.skatVisible(), snapshot.phase());
@@ -80,10 +87,15 @@ public class SkatTableView extends BorderPane {
         boolean skatExchange = snapshot.phase() == GamePhase.SKAT_EXCHANGE;
         boolean playing = snapshot.phase() == GamePhase.PLAYING;
 
+        contractControls.setVisible(contractSelection);
+        contractControls.setManaged(contractSelection);
+
         bidButton.setText(bidding ? "Licytuj " + snapshot.nextBid() : "Licytacja zakończona");
         bidButton.setDisable(!bidding || snapshot.nextBid() == 0 || snapshot.finished());
 
-        setContractControlsDisabled(!contractSelection || snapshot.finished());
+        updateContractControls(snapshot);
+        takeSkatButton.setDisable(!snapshot.canTakeSkatBeforeContract() || snapshot.finished());
+        chooseGameWithoutSkatButton.setDisable(!snapshot.canChooseGameWithoutSkat() || snapshot.finished());
         confirmContractButton.setDisable(!contractSelection || snapshot.finished());
 
         discardCardButton.setText(skatExchange ? "Odłóż kartę (zostało: " + snapshot.cardsToDiscard() + ")" : "Odłóż kartę");
@@ -104,6 +116,14 @@ public class SkatTableView extends BorderPane {
 
     public void setOnConfirmContract(Consumer<GameContract> onConfirmContract) {
         this.onConfirmContract = onConfirmContract;
+    }
+
+    public void setOnTakeSkat(Runnable onTakeSkat) {
+        this.onTakeSkat = onTakeSkat;
+    }
+
+    public void setOnChooseGameWithoutSkat(Runnable onChooseGameWithoutSkat) {
+        this.onChooseGameWithoutSkat = onChooseGameWithoutSkat;
     }
 
     public void setOnBid(Runnable onBid) {
@@ -168,6 +188,11 @@ public class SkatTableView extends BorderPane {
             if (newValue == TypGry.NULL) {
                 schneiderCheckBox.setSelected(false);
                 schwarzCheckBox.setSelected(false);
+            } else if (ouvertCheckBox.isDisabled()) {
+                ouvertCheckBox.setSelected(false);
+            }
+            if (lastSnapshot != null) {
+                updateContractControls(lastSnapshot);
             }
         });
     }
@@ -229,7 +254,6 @@ public class SkatTableView extends BorderPane {
         bottomArea.setPadding(new Insets(12));
         VBox.setVgrow(playerHandView, Priority.NEVER);
 
-        HBox contractControls = new HBox(8);
         contractControls.setAlignment(Pos.CENTER);
         contractControls.getChildren().addAll(
                 sectionLabel("Rodzaj gry:"),
@@ -245,11 +269,31 @@ public class SkatTableView extends BorderPane {
 
         HBox actionButtons = new HBox(10);
         actionButtons.setAlignment(Pos.CENTER);
-        actionButtons.getChildren().addAll(bidButton, discardCardButton, playCardButton, passButton, newDealButton);
+        actionButtons.getChildren().addAll(
+                bidButton,
+                takeSkatButton,
+                chooseGameWithoutSkatButton,
+                discardCardButton,
+                playCardButton,
+                passButton,
+                newDealButton
+        );
 
         bidButton.setOnAction(event -> {
             if (onBid != null) {
                 onBid.run();
+            }
+        });
+
+        takeSkatButton.setOnAction(event -> {
+            if (onTakeSkat != null) {
+                onTakeSkat.run();
+            }
+        });
+
+        chooseGameWithoutSkatButton.setOnAction(event -> {
+            if (onChooseGameWithoutSkat != null) {
+                onChooseGameWithoutSkat.run();
             }
         });
 
@@ -304,13 +348,31 @@ public class SkatTableView extends BorderPane {
         );
     }
 
-    private void setContractControlsDisabled(boolean disabled) {
+    private void updateContractControls(GameSnapshot snapshot) {
+        boolean disabled = snapshot.phase() != GamePhase.CONTRACT_SELECTION || snapshot.finished();
+        boolean restrictedAfterSkat = snapshot.declarationsRestrictedAfterSkat();
+        boolean handRequired = snapshot.handRequired();
+        TypGry selectedType = gameTypeComboBox.getValue();
+
+        if (restrictedAfterSkat) {
+            handCheckBox.setSelected(false);
+            schneiderCheckBox.setSelected(false);
+            schwarzCheckBox.setSelected(false);
+            if (selectedType != TypGry.NULL) {
+                ouvertCheckBox.setSelected(false);
+            }
+        }
+
+        if (handRequired) {
+            handCheckBox.setSelected(true);
+        }
+
         gameTypeComboBox.setDisable(disabled);
-        colorComboBox.setDisable(disabled || gameTypeComboBox.getValue() != TypGry.KOLOROWA);
-        handCheckBox.setDisable(disabled);
-        schneiderCheckBox.setDisable(disabled || gameTypeComboBox.getValue() == TypGry.NULL);
-        schwarzCheckBox.setDisable(disabled || gameTypeComboBox.getValue() == TypGry.NULL);
-        ouvertCheckBox.setDisable(disabled);
+        colorComboBox.setDisable(disabled || selectedType != TypGry.KOLOROWA);
+        handCheckBox.setDisable(disabled || restrictedAfterSkat || handRequired);
+        schneiderCheckBox.setDisable(disabled || restrictedAfterSkat || selectedType == TypGry.NULL);
+        schwarzCheckBox.setDisable(disabled || restrictedAfterSkat || selectedType == TypGry.NULL);
+        ouvertCheckBox.setDisable(disabled || (restrictedAfterSkat && selectedType != TypGry.NULL));
     }
 
     private void setCurrentTrick(List<Karta> cardsOnTable) {
@@ -327,8 +389,9 @@ public class SkatTableView extends BorderPane {
             for (Karta card : skatCards) {
                 skatBox.getChildren().add(new CardView(card));
             }
-            if (phase == GamePhase.SKAT_EXCHANGE && skatCards.isEmpty()) {
-                Label emptyLabel = new Label("Odłóż 2 karty");
+            if (skatCards.isEmpty()) {
+                String labelText = phase == GamePhase.SKAT_EXCHANGE ? "Odłóż 2 karty" : "Skat w ręce";
+                Label emptyLabel = new Label(labelText);
                 emptyLabel.getStyleClass().add("small-info-label");
                 skatBox.getChildren().add(emptyLabel);
             }

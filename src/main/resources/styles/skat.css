@@ -59,3 +59,23 @@
     -fx-font-size: 14px;
     -fx-padding: 8 14;
 }
+
+.check-box {
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+}
+
+.combo-box {
+    -fx-font-size: 13px;
+}
+
+.menu-title {
+    -fx-text-fill: white;
+    -fx-font-size: 42px;
+    -fx-font-weight: bold;
+}
+
+.text-field {
+    -fx-font-size: 14px;
+    -fx-padding: 8;
+}
