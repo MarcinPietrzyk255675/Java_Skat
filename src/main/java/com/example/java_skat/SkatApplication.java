@@ -9,7 +9,11 @@ import pl.skat.core.Kolor;
 
 import java.util.List;
 
-public class HelloApplication extends Application {
+public class SkatApplication extends Application {
+
+	public static final int WIDTH = 1000;
+	public static final int HEIGHT = 700;
+	public static final int STARTING_CARDS_NUMBER = 10;
 
 	@Override
 	public void start(Stage stage) {
@@ -26,11 +30,11 @@ public class HelloApplication extends Application {
 
 		tableView.setSkatHidden();
 		tableView.setCurrentTrick(List.of());
-		tableView.setOpponentCardCounts(10, 10);
+		tableView.setOpponentCardCounts(STARTING_CARDS_NUMBER, STARTING_CARDS_NUMBER);
 
 		tableView.setOnPlayCard(karta -> System.out.println("Gracz chce zagrać kartę: " + karta));
 
-		Scene scene = new Scene(tableView, 1000, 700);
+		Scene scene = new Scene(tableView, WIDTH, HEIGHT);
 
 		stage.setTitle("Skat");
 		stage.setScene(scene);

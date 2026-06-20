@@ -10,8 +10,8 @@ import java.util.Objects;
 
 public class CardView extends StackPane {
 
-    private static final double CARD_WIDTH = 70;
-    private static final double CARD_HEIGHT = 105;
+    private static final double CARD_WIDTH = 70*2;
+    private static final double CARD_HEIGHT = 105*2;
 
     private final Karta karta;
     private boolean selected = false;
