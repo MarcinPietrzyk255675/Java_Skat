@@ -1,5 +1,6 @@
 package com.example.java_skat.ui;
 
+import com.example.java_skat.game.GamePhase;
 import com.example.java_skat.game.GameSnapshot;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,15 +23,18 @@ public class SkatTableView extends BorderPane {
 
     private final Label topOpponentLabel = new Label();
     private final Label leftOpponentLabel = new Label();
+    private final Label bidLabel = new Label();
     private final Label statusLabel = new Label();
     private final Label collectedCardsLabel = new Label();
 
+    private final Button bidButton = new Button("Licytuj");
     private final Button playCardButton = new Button("Zagraj kartę");
     private final Button showSkatButton = new Button("Pokaż skat");
     private final Button passButton = new Button("Pas");
     private final Button newDealButton = new Button("Nowe rozdanie");
 
     private Consumer<Karta> onPlayCard;
+    private Runnable onBid;
     private Runnable onShowSkat;
     private Runnable onPass;
     private Runnable onNewDeal;
@@ -48,16 +52,28 @@ public class SkatTableView extends BorderPane {
         setCurrentTrick(snapshot.currentTrick());
         setSkat(snapshot.skat(), snapshot.skatVisible());
         setOpponentCardCounts(snapshot.topOpponentCardCount(), snapshot.leftOpponentCardCount());
+        setBidInfo(snapshot);
         statusLabel.setText(snapshot.status());
-        collectedCardsLabel.setText("Zebrane karty demo: " + snapshot.collectedCardCount());
+        collectedCardsLabel.setText("Karty zebrane przez gracza: " + snapshot.collectedCardCount());
 
-        playCardButton.setDisable(snapshot.finished() || snapshot.playerHand().isEmpty());
-        showSkatButton.setDisable(snapshot.finished() || snapshot.skatVisible());
+        boolean bidding = snapshot.phase() == GamePhase.BIDDING;
+        boolean playing = snapshot.phase() == GamePhase.PLAYING;
+
+        bidButton.setText(bidding ? "Licytuj " + snapshot.nextBid() : "Licytacja zakończona");
+        bidButton.setDisable(!bidding || snapshot.nextBid() == 0 || snapshot.finished());
+
+        playCardButton.setDisable(!playing || snapshot.finished() || snapshot.playerHand().isEmpty());
+        showSkatButton.setDisable(!playing || snapshot.finished() || snapshot.skatVisible());
+        passButton.setText(bidding ? "Pas" : "Poddaj rozdanie");
         passButton.setDisable(snapshot.finished());
     }
 
     public void setOnPlayCard(Consumer<Karta> onPlayCard) {
         this.onPlayCard = onPlayCard;
+    }
+
+    public void setOnBid(Runnable onBid) {
+        this.onBid = onBid;
     }
 
     public void setOnShowSkat(Runnable onShowSkat) {
@@ -78,10 +94,11 @@ public class SkatTableView extends BorderPane {
         topArea.setPadding(new Insets(12));
 
         topOpponentLabel.getStyleClass().add("opponent-label");
+        bidLabel.getStyleClass().add("small-info-label");
         statusLabel.getStyleClass().add("status-label");
         statusLabel.setWrapText(true);
 
-        topArea.getChildren().addAll(topOpponentLabel, statusLabel);
+        topArea.getChildren().addAll(topOpponentLabel, bidLabel, statusLabel);
         setTop(topArea);
     }
 
@@ -129,7 +146,13 @@ public class SkatTableView extends BorderPane {
 
         HBox actionButtons = new HBox(10);
         actionButtons.setAlignment(Pos.CENTER);
-        actionButtons.getChildren().addAll(playCardButton, showSkatButton, passButton, newDealButton);
+        actionButtons.getChildren().addAll(bidButton, playCardButton, showSkatButton, passButton, newDealButton);
+
+        bidButton.setOnAction(event -> {
+            if (onBid != null) {
+                onBid.run();
+            }
+        });
 
         playCardButton.setOnAction(event -> playerHandView.selectedCard().ifPresentOrElse(
                 card -> {
@@ -186,6 +209,16 @@ public class SkatTableView extends BorderPane {
     private void setOpponentCardCounts(int topOpponentCards, int leftOpponentCards) {
         topOpponentLabel.setText("Przeciwnik 1: " + topOpponentCards + " kart");
         leftOpponentLabel.setText("Przeciwnik 2: " + leftOpponentCards + " kart");
+    }
+
+    private void setBidInfo(GameSnapshot snapshot) {
+        if (snapshot.currentBid() == 0) {
+            bidLabel.setText("Licytacja: brak ofert");
+            return;
+        }
+
+        bidLabel.setText("Licytacja: " + snapshot.currentBid()
+                + ", prowadzi: " + snapshot.highestBidderName());
     }
 
     private Label sectionLabel(String text) {

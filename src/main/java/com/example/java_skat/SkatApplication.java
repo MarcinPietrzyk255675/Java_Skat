@@ -37,6 +37,11 @@ public class SkatApplication extends Application {
             renderCurrentState();
         });
 
+        tableView.setOnBid(() -> {
+            gameController.bid();
+            renderCurrentState();
+        });
+
         tableView.setOnShowSkat(() -> {
             gameController.showSkat();
             renderCurrentState();

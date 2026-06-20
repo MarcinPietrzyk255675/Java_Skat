@@ -12,6 +12,10 @@ public record GameSnapshot(
         int topOpponentCardCount,
         int leftOpponentCardCount,
         int collectedCardCount,
+        GamePhase phase,
+        int currentBid,
+        int nextBid,
+        String highestBidderName,
         String status,
         boolean finished
 ) {
