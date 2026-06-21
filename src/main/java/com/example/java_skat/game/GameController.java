@@ -215,9 +215,16 @@ public class GameController {
 		if (playerId != dealState.getCurrentPlayer()) {
 			throw new IllegalStateException("It is not your turn to play a card");
 		}
-		if (!dealState.getHand(playerId).remove(card)) {
+		List<Karta> hand = dealState.getHand(playerId);
+
+		if (!hand.contains(card)) {
 			throw new IllegalStateException("Player does not have this card in hand");
 		}
+
+		if (!CardRules.canFollow(card, hand, dealState.getCurrentTrick(), dealState.getRodzajGry().kolor)) {
+			throw new IllegalStateException("Player must follow suit or trump");
+		}
+		hand.remove(card);
 
 		dealState.getCurrentTrick().add(new PlayerCard(playerId, card));
 		if (dealState.getCurrentTrick().size() == 3) {

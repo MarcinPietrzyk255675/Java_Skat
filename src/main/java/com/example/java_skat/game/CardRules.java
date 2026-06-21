@@ -4,7 +4,9 @@ import pl.skat.core.Figura;
 import pl.skat.core.Karta;
 import pl.skat.core.Kolor;
 
-public class CardRules {
+import java.util.List;
+
+public final class CardRules {
 	private CardRules() {
 	}
 
@@ -40,5 +42,38 @@ public class CardRules {
 			case SIODEMKA -> 1;
 			case JOPEK -> 0;
 		};
+	}
+
+	public static boolean hasTrump(List<Karta> hand, Kolor trumpColor) {
+		return hand.stream().anyMatch(card -> isTrump(card, trumpColor));
+	}
+
+	public static boolean hasColorWithoutTrumps(List<Karta> hand, Kolor color, Kolor trumpColor) {
+		return hand.stream().anyMatch(card -> card.kolor() == color && !isTrump(card, trumpColor));
+	}
+
+	public static boolean canFollow(Karta cardToPlay, List<Karta> hand, List<PlayerCard> currentTrick,
+	                                Kolor trumpColor) {
+		if (currentTrick.isEmpty()) {
+			return true;
+		}
+
+		Karta leadCard = currentTrick.getFirst().card();
+
+		if (isTrump(leadCard, trumpColor)) {
+			if (!hasTrump(hand, trumpColor)) {
+				return true;
+			}
+
+			return isTrump(cardToPlay, trumpColor);
+		}
+
+		Kolor leadColor = leadCard.kolor();
+
+		if (!hasColorWithoutTrumps(hand, leadColor, trumpColor)) {
+			return true;
+		}
+
+		return cardToPlay.kolor() == leadColor && !isTrump(cardToPlay, trumpColor);
 	}
 }

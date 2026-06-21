@@ -87,21 +87,21 @@ public class ConsoleMain {
 			System.out.println("Pierwszy gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
 
 			PlayerId firstPlayer = gameController.getDealState().getCurrentPlayer();
-			Karta firstCard = gameController.getDealState().getHand(firstPlayer).get(0);
+			Karta firstCard = firstLegalCard(gameController, firstPlayer);
 			gameController.playCard(firstPlayer, firstCard);
 
 			System.out.println(firstPlayer.getDisplayName() + " zagrał: " + firstCard);
 			System.out.println("Teraz gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
 
 			PlayerId secondPlayer = gameController.getDealState().getCurrentPlayer();
-			Karta secondCard = gameController.getDealState().getHand(secondPlayer).get(0);
+			Karta secondCard = firstLegalCard(gameController, secondPlayer);
 			gameController.playCard(secondPlayer, secondCard);
 
 			System.out.println(secondPlayer.getDisplayName() + " zagrał: " + secondCard);
 			System.out.println("Teraz gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
 
 			PlayerId thirdPlayer = gameController.getDealState().getCurrentPlayer();
-			Karta thirdCard = gameController.getDealState().getHand(thirdPlayer).get(0);
+			Karta thirdCard = firstLegalCard(gameController, thirdPlayer);
 			gameController.playCard(thirdPlayer, thirdCard);
 
 			System.out.println(thirdPlayer.getDisplayName() + " zagrał: " + thirdCard);
@@ -115,5 +115,13 @@ public class ConsoleMain {
 			System.out.println(
 					"Następną lewę zaczyna: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
 		}
+	}
+
+	private static Karta firstLegalCard(GameController gameController, PlayerId playerId) {
+		return gameController.getDealState().getHand(playerId).stream().filter(
+				card -> com.example.java_skat.game.CardRules.canFollow(card,
+				                                                       gameController.getDealState().getHand(playerId),
+				                                                       gameController.getDealState().getCurrentTrick(),
+				                                                       gameController.getDealState().getRodzajGry().kolor)).findFirst().orElseThrow();
 	}
 }
