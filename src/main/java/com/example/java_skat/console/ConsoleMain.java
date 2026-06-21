@@ -4,6 +4,7 @@ import com.example.java_skat.game.BidLadder;
 import com.example.java_skat.game.GameController;
 import com.example.java_skat.game.PlayerId;
 import pl.skat.core.Karta;
+import pl.skat.core.WynikGry;
 
 public class ConsoleMain {
 	public static void main(String[] args) {
@@ -119,6 +120,15 @@ public class ConsoleMain {
 				System.out.println(player.getDisplayName() + " zebrał kart: " +
 				                   gameController.getDealState().getWonCards(player).size());
 			}
+			WynikGry wynik = gameController.calculateCoreResult();
+
+			System.out.println();
+			System.out.println("Wynik według skat-core:");
+			System.out.println("Rozgrywający: " + gameController.getDealState().getDeclarer().getDisplayName());
+			System.out.println("Wygrana: " + wynik.wygrana);
+			System.out.println("Wynik: " + wynik.wynik);
+			System.out.println("Schneider: " + gameController.getDealState().getRodzajGry().schneider);
+			System.out.println("Schwarz: " + gameController.getDealState().getRodzajGry().schwarz);
 		}
 	}
 

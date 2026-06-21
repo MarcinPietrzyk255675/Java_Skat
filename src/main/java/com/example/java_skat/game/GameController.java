@@ -1,9 +1,8 @@
 package com.example.java_skat.game;
 
-import pl.skat.core.Karta;
-import pl.skat.core.Kolor;
-import pl.skat.core.TypGry;
+import pl.skat.core.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GameController {
@@ -194,6 +193,9 @@ public class GameController {
 		dealState.getRodzajGry().typ = TypGry.KOLOROWA;
 		dealState.getRodzajGry().kolor = trumpColor;
 
+		dealState.getDeclarerStartingHand().clear();
+		dealState.getDeclarerStartingHand().addAll(dealState.getHand(playerId));
+
 		dealState.setCurrentPlayer(playerWithPosition(PlayerPosition.FOREHAND));
 		dealState.setPhase(GamePhase.PLAYING);
 	}
@@ -252,5 +254,37 @@ public class GameController {
 		}
 		dealState.setCurrentPlayer(nextPlayerAfter(playerId));
 	}
+
+	public WynikGry calculateCoreResult() {
+        if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
+                throw new IllegalStateException("Deal is not finished yet");
+        }
+
+        if (dealState.getDeclarerStartingHand().size() != 10) {
+                throw new IllegalStateException("Declarer must have exactly 10 cards for scoring");
+        }
+
+        if (dealState.getSkat().size() != 2) {
+                throw new IllegalStateException("Skat must contain exactly 2 cards for scoring");
+        }
+
+        Gracz coreDeclarer = new Gracz();
+        Gracz coreOpponentOne = new Gracz();
+        Gracz coreOpponentTwo = new Gracz();
+
+        coreDeclarer.ustawPosiadaneKarty(new ArrayList<>(dealState.getDeclarerStartingHand()));
+        coreDeclarer.ustawZebraneKarty(new ArrayList<>(dealState.getWonCards(dealState.getDeclarer())));
+
+        Skat coreSkat = new Skat();
+        coreSkat.ustawKarta1(dealState.getSkat().get(0));
+        coreSkat.ustawKarta2(dealState.getSkat().get(1));
+
+        Rozdanie coreDeal = new Rozdanie(coreDeclarer, coreOpponentOne, coreOpponentTwo);
+        coreDeal.ustawRodzajGry(dealState.getRodzajGry());
+        coreDeal.ustawWartoscLicytacji(dealState.getCurrentBid());
+        coreDeal.ustawSkat(coreSkat);
+
+        return coreDeal.obliczWynik();
+}
 
 }

@@ -34,6 +34,8 @@ public class DealState {
 	private final Map<PlayerId, List<Karta>> wonCards = new EnumMap<>(PlayerId.class);
 	private int completedTrickCount = 0;
 
+	private final List<Karta> declarerStartingHand = new ArrayList<>();
+
 
 	public DealState() {
 		for (PlayerId player : PlayerId.values()) {
@@ -165,5 +167,9 @@ public class DealState {
 
 	public void incrementCompletedTrickCount() {
 		completedTrickCount++;
+	}
+
+	public List<Karta> getDeclarerStartingHand() {
+		return declarerStartingHand;
 	}
 }

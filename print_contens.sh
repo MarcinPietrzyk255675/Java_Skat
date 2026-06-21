@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+clear
 find . -type f \
   -not -path "*/.idea/*" \
   -not -path "*/.git/*" \
