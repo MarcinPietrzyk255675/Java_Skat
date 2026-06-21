@@ -76,6 +76,44 @@ public class ConsoleMain {
 			System.out.println("Liczba kart w skacie: " + gameController.getDealState().getSkat().size());
 			System.out.println("Faza: " + gameController.getDealState().getPhase());
 
+			gameController.declareColorGame(declarer, pl.skat.core.Kolor.SERCE);
+
+			System.out.println("Rozgrywający deklaruje grę kolorową.");
+			System.out.println("Typ gry: " + gameController.getDealState().getRodzajGry().typ);
+			System.out.println("Kolor atutowy: " + gameController.getDealState().getRodzajGry().kolor);
+			System.out.println("Gra z ręki: " + gameController.getDealState().getRodzajGry().hand);
+			System.out.println("Faza: " + gameController.getDealState().getPhase());
+
+			System.out.println("Pierwszy gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
+
+			PlayerId firstPlayer = gameController.getDealState().getCurrentPlayer();
+			Karta firstCard = gameController.getDealState().getHand(firstPlayer).get(0);
+			gameController.playCard(firstPlayer, firstCard);
+
+			System.out.println(firstPlayer.getDisplayName() + " zagrał: " + firstCard);
+			System.out.println("Teraz gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
+
+			PlayerId secondPlayer = gameController.getDealState().getCurrentPlayer();
+			Karta secondCard = gameController.getDealState().getHand(secondPlayer).get(0);
+			gameController.playCard(secondPlayer, secondCard);
+
+			System.out.println(secondPlayer.getDisplayName() + " zagrał: " + secondCard);
+			System.out.println("Teraz gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
+
+			PlayerId thirdPlayer = gameController.getDealState().getCurrentPlayer();
+			Karta thirdCard = gameController.getDealState().getHand(thirdPlayer).get(0);
+			gameController.playCard(thirdPlayer, thirdCard);
+
+			System.out.println(thirdPlayer.getDisplayName() + " zagrał: " + thirdCard);
+
+			System.out.println("Karty w zakończonej lewie:");
+			gameController.getDealState().getLastCompletedTrick().forEach(playedCard -> System.out.println(
+					playedCard.playerId().getDisplayName() + ": " + playedCard.card()));
+
+			System.out.println("Lewę wygrał: " + gameController.getDealState().getLastTrickWinner().getDisplayName());
+
+			System.out.println(
+					"Następną lewę zaczyna: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
 		}
 	}
 }

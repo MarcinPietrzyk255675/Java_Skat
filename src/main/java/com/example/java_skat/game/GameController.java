@@ -1,6 +1,8 @@
 package com.example.java_skat.game;
 
 import pl.skat.core.Karta;
+import pl.skat.core.Kolor;
+import pl.skat.core.TypGry;
 
 import java.util.List;
 
@@ -179,6 +181,57 @@ public class GameController {
 		if (dealState.getSkat().size() == 2) {
 			dealState.setPhase(GamePhase.CONTRACT_SELECTION);
 		}
+	}
+
+	public void declareColorGame(PlayerId playerId, Kolor trumpColor) {
+		if (dealState.getPhase() != GamePhase.CONTRACT_SELECTION) {
+			throw new IllegalStateException("It is not the time to declare color game");
+		}
+		if (playerId != dealState.getDeclarer()) {
+			throw new IllegalStateException("Only the declarer can declare color game");
+		}
+
+		dealState.getRodzajGry().typ = TypGry.KOLOROWA;
+		dealState.getRodzajGry().kolor = trumpColor;
+
+		dealState.setCurrentPlayer(playerWithPosition(PlayerPosition.FOREHAND));
+		dealState.setPhase(GamePhase.PLAYING);
+	}
+
+	private PlayerId nextPlayerAfter(PlayerId playerId) {
+		PlayerPosition position = dealState.getPosition(playerId);
+		PlayerPosition nextPosition = switch (position) {
+			case FOREHAND -> PlayerPosition.MIDDLEHAND;
+			case MIDDLEHAND -> PlayerPosition.REARHAND;
+			case REARHAND -> PlayerPosition.FOREHAND;
+		};
+		return playerWithPosition(nextPosition);
+	}
+
+	public void playCard(PlayerId playerId, Karta card) {
+		if (dealState.getPhase() != GamePhase.PLAYING) {
+			throw new IllegalStateException("It is not the time to play a card");
+		}
+		if (playerId != dealState.getCurrentPlayer()) {
+			throw new IllegalStateException("It is not your turn to play a card");
+		}
+		if (!dealState.getHand(playerId).remove(card)) {
+			throw new IllegalStateException("Player does not have this card in hand");
+		}
+
+		dealState.getCurrentTrick().add(new PlayerCard(playerId, card));
+		if (dealState.getCurrentTrick().size() == 3) {
+			PlayerId winner = TrickWinner.findWinner(dealState.getCurrentTrick(), dealState.getRodzajGry().kolor);
+
+			dealState.getLastCompletedTrick().clear();
+			dealState.getLastCompletedTrick().addAll(dealState.getCurrentTrick());
+			dealState.getCurrentTrick().clear();
+
+			dealState.setLastTrickWinner(winner);
+			dealState.setCurrentPlayer(winner);
+			return;
+		}
+		dealState.setCurrentPlayer(nextPlayerAfter(playerId));
 	}
 
 }

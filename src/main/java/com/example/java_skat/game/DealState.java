@@ -20,10 +20,16 @@ public class DealState {
 	private PlayerId highestBidder;
 	private int currentBid = 0;
 	private boolean rearhandJoinedBidding = false;
+
 	private GamePhase phase = GamePhase.BIDDING;
 	private PlayerId declarer;
 	private RodzajGry rodzajGry = new RodzajGry();
 
+	private final List<PlayerCard> currentTrick = new ArrayList<>();
+	private PlayerId currentPlayer;
+
+	private final List<PlayerCard> lastCompletedTrick = new ArrayList<>();
+	private PlayerId lastTrickWinner;
 
 	public DealState() {
 		for (PlayerId player : PlayerId.values()) {
@@ -117,5 +123,29 @@ public class DealState {
 
 	public void setRodzajGry(RodzajGry rodzajGry) {
 		this.rodzajGry = rodzajGry;
+	}
+
+	public List<PlayerCard> getCurrentTrick() {
+		return currentTrick;
+	}
+
+	public PlayerId getCurrentPlayer() {
+		return currentPlayer;
+	}
+
+	public void setCurrentPlayer(PlayerId currentPlayer) {
+		this.currentPlayer = currentPlayer;
+	}
+
+	public List<PlayerCard> getLastCompletedTrick() {
+		return lastCompletedTrick;
+	}
+
+	public PlayerId getLastTrickWinner() {
+		return lastTrickWinner;
+	}
+
+	public void setLastTrickWinner(PlayerId lastTrickWinner) {
+		this.lastTrickWinner = lastTrickWinner;
 	}
 }
