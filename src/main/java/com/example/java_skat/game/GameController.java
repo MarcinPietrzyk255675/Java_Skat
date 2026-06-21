@@ -13,7 +13,7 @@ public class GameController {
 	private DealState dealState;
 
 
-	private int dealNumber = 0;
+	private static int dealNumber = 0;
 
 	public void dealCards() {
 		if (dealNumber >= MAX_DEALS) {
@@ -36,7 +36,7 @@ public class GameController {
 		return dealState;
 	}
 
-	public int getDealNumber() {
+	public static int getDealNumber() {
 		return dealNumber;
 	}
 
