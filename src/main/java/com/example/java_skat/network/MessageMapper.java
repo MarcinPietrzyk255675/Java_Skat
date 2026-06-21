@@ -13,6 +13,12 @@ public final class MessageMapper {
         return new GameStateMessage(
                 toDto(snapshot.playerHand()),
                 toDto(snapshot.currentTrick()),
+                toDto(snapshot.ownTrickCard()),
+                snapshot.ownTrickLabel(),
+                toDto(snapshot.leftOpponentTrickCard()),
+                snapshot.leftOpponentTrickLabel(),
+                toDto(snapshot.rightOpponentTrickCard()),
+                snapshot.rightOpponentTrickLabel(),
                 toDto(snapshot.skat()),
                 snapshot.skatVisible(),
                 toDto(snapshot.topOpponentHand()),
@@ -55,6 +61,12 @@ public final class MessageMapper {
         return new GameSnapshot(
                 toCore(message.playerHand()),
                 toCore(message.currentTrick()),
+                toCore(message.ownTrickCard()),
+                message.ownTrickLabel(),
+                toCore(message.leftOpponentTrickCard()),
+                message.leftOpponentTrickLabel(),
+                toCore(message.rightOpponentTrickCard()),
+                message.rightOpponentTrickLabel(),
                 toCore(message.skat()),
                 message.skatVisible(),
                 toCore(message.topOpponentHand()),
@@ -99,9 +111,17 @@ public final class MessageMapper {
                 .toList();
     }
 
+    private static CardDto toDto(Karta card) {
+        return card == null ? null : CardDto.fromCore(card);
+    }
+
     private static List<Karta> toCore(List<CardDto> cards) {
         return cards.stream()
                 .map(CardDto::toCore)
                 .toList();
+    }
+
+    private static Karta toCore(CardDto card) {
+        return card == null ? null : card.toCore();
     }
 }

@@ -3,23 +3,31 @@
     -fx-font-family: "SansSerif";
 }
 
+.top-info-bar, .bottom-player-area, .side-player-area {
+    -fx-background-color: rgba(0, 0, 0, 0.10);
+}
+
 .table-center {
     -fx-background-color: rgba(255, 255, 255, 0.08);
-    -fx-background-radius: 24;
-    -fx-border-color: rgba(255, 255, 255, 0.18);
-    -fx-border-radius: 24;
+    -fx-background-radius: 12;
 }
 
 .status-label {
     -fx-text-fill: white;
-    -fx-font-size: 18px;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
     -fx-alignment: center;
+    -fx-text-alignment: center;
 }
 
 .opponent-label, .section-label, .small-info-label {
     -fx-text-fill: white;
-    -fx-font-size: 15px;
+    -fx-font-size: 13px;
+}
+
+.opponent-label {
+    -fx-font-weight: bold;
+    -fx-wrap-text: true;
 }
 
 .section-label {
@@ -27,46 +35,47 @@
 }
 
 .card {
-    -fx-background-color: white;
-    -fx-background-radius: 8;
-    -fx-border-color: #222222;
-    -fx-border-radius: 8;
-    -fx-border-width: 1;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 8, 0, 0, 2);
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-effect: none;
 }
 
 .card-selected {
-    -fx-border-color: gold;
-    -fx-border-width: 3;
+    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.85), 14, 0.25, 0, 0);
 }
 
 .card-back {
-    -fx-background-color: #273c75;
+    -fx-background-color: transparent;
 }
 
 .card-fallback-label {
+    -fx-background-color: white;
+    -fx-background-radius: 6;
     -fx-text-fill: #111111;
-    -fx-font-size: 15px;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-padding: 8;
+    -fx-padding: 6;
 }
 
 .card-back .card-fallback-label {
+    -fx-background-color: #273c75;
     -fx-text-fill: white;
 }
 
 .button {
-    -fx-font-size: 14px;
-    -fx-padding: 8 14;
+    -fx-font-size: 13px;
+    -fx-padding: 7 11;
 }
 
 .check-box {
     -fx-text-fill: white;
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
 }
 
 .combo-box {
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
 }
 
 .menu-title {
@@ -78,4 +87,44 @@
 .text-field {
     -fx-font-size: 14px;
     -fx-padding: 8;
+}
+
+.scroll-pane {
+    -fx-background: transparent;
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.player-hand {
+    -fx-padding: 2 0 8 0;
+}
+
+.mini-card-fallback-label {
+    -fx-background-color: white;
+    -fx-background-radius: 3;
+    -fx-text-fill: #111111;
+    -fx-font-size: 6px;
+    -fx-font-weight: bold;
+    -fx-padding: 2;
+}
+
+.trick-table {
+    -fx-background-color: rgba(0, 0, 0, 0.07);
+    -fx-background-radius: 14;
+}
+
+.trick-slot {
+    -fx-padding: 0;
+}
+
+.trick-card-label {
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-text-alignment: center;
 }

@@ -7,6 +7,12 @@ import java.util.List;
 public record GameStateMessage(
         List<CardDto> playerHand,
         List<CardDto> currentTrick,
+        CardDto ownTrickCard,
+        String ownTrickLabel,
+        CardDto leftOpponentTrickCard,
+        String leftOpponentTrickLabel,
+        CardDto rightOpponentTrickCard,
+        String rightOpponentTrickLabel,
         List<CardDto> skat,
         boolean skatVisible,
         List<CardDto> topOpponentHand,

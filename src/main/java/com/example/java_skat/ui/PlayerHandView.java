@@ -13,7 +13,7 @@ public class PlayerHandView extends HBox {
     private Consumer<Karta> onCardSelected;
 
     public PlayerHandView() {
-        setSpacing(6);
+        setSpacing(0);
         setAlignment(Pos.CENTER_LEFT);
         getStyleClass().add("player-hand");
     }

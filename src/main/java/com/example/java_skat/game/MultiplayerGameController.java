@@ -22,9 +22,11 @@ public class MultiplayerGameController {
     private final EnumMap<PlayerSeat, String> playerNames = new EnumMap<>(PlayerSeat.class);
     private final EnumMap<PlayerSeat, List<Karta>> hands = new EnumMap<>(PlayerSeat.class);
     private final EnumMap<PlayerSeat, HandPosition> positions = new EnumMap<>(PlayerSeat.class);
+    private final EnumMap<PlayerSeat, Integer> totalScores = new EnumMap<>(PlayerSeat.class);
 
     private final List<Karta> skatCards = new ArrayList<>();
     private final List<PlayedCard> currentTrick = new ArrayList<>();
+    private final List<PlayedCard> lastCompletedTrick = new ArrayList<>();
     private final List<Karta> declarerCollectedCards = new ArrayList<>();
     private final List<Karta> opponentsCollectedCards = new ArrayList<>();
     private final List<Karta> declarerInitialHand = new ArrayList<>();
@@ -38,6 +40,7 @@ public class MultiplayerGameController {
     private PlayerSeat biddingResponder;
     private boolean waitingForBidAnswer;
     private boolean rearhandEnteredBidding;
+    private boolean forehandFinalDecision;
 
     private PlayerSeat highestBidder;
     private PlayerSeat declarerSeat;
@@ -57,6 +60,7 @@ public class MultiplayerGameController {
         for (PlayerSeat seat : PlayerSeat.values()) {
             playerNames.putIfAbsent(seat, seat.displayName());
             hands.put(seat, new ArrayList<>());
+            totalScores.put(seat, 0);
         }
         startNewDeal();
     }
@@ -70,7 +74,7 @@ public class MultiplayerGameController {
         if (currentDealNumber >= TOTAL_DEALS) {
             phase = GamePhase.FINISHED;
             finished = true;
-            status = "Rozgrywka zakończona. Rozegrano wszystkie " + TOTAL_DEALS + " rozdań.";
+            status = gameOverSummary();
             return;
         }
 
@@ -84,6 +88,7 @@ public class MultiplayerGameController {
         }
         skatCards.clear();
         currentTrick.clear();
+        lastCompletedTrick.clear();
         declarerCollectedCards.clear();
         opponentsCollectedCards.clear();
         declarerInitialHand.clear();
@@ -107,6 +112,7 @@ public class MultiplayerGameController {
         opponentsWonTricks = 0;
         skatVisible = false;
         skatTakenBeforeContract = false;
+        forehandFinalDecision = false;
         finished = false;
         lastTrickSummary = "";
         configureInitialBiddingPair();
@@ -119,6 +125,11 @@ public class MultiplayerGameController {
     public synchronized void bid(PlayerSeat seat) {
         if (phase != GamePhase.BIDDING || finished) {
             status = "Licytacja nie jest teraz aktywna.";
+            return;
+        }
+
+        if (forehandFinalDecision) {
+            forehandDeclaresMinimumGame(seat);
             return;
         }
 
@@ -257,21 +268,29 @@ public class MultiplayerGameController {
 
     public synchronized GameSnapshot snapshotFor(PlayerSeat seat) {
         List<Karta> ownHand = CardSorter.sortedCopy(handOf(seat), gameType);
-        List<PlayerSeat> opponents = opponentsOf(seat);
-        PlayerSeat topOpponent = opponents.get(0);
-        PlayerSeat leftOpponent = opponents.get(1);
-        boolean topVisible = isOpponentHandVisibleFor(seat, topOpponent);
+        PlayerSeat leftOpponent = leftNeighborOf(seat);
+        PlayerSeat rightOpponent = rightNeighborOf(seat);
+        boolean rightVisible = isOpponentHandVisibleFor(seat, rightOpponent);
         boolean leftVisible = isOpponentHandVisibleFor(seat, leftOpponent);
+        PlayedCard ownTrickCard = trickCardPlayedBy(seat);
+        PlayedCard leftTrickCard = trickCardPlayedBy(leftOpponent);
+        PlayedCard rightTrickCard = trickCardPlayedBy(rightOpponent);
 
         return new GameSnapshot(
                 ownHand,
-                List.copyOf(currentTrickCards()),
+                List.copyOf(displayedTrickCards()),
+                ownTrickCard == null ? null : ownTrickCard.card(),
+                trickLabel(ownTrickCard),
+                leftTrickCard == null ? null : leftTrickCard.card(),
+                trickLabel(leftTrickCard),
+                rightTrickCard == null ? null : rightTrickCard.card(),
+                trickLabel(rightTrickCard),
                 visibleSkatFor(seat),
                 isSkatVisibleFor(seat),
-                topVisible ? CardSorter.sortedCopy(handOf(topOpponent), gameType) : List.of(),
-                topVisible,
-                handOf(topOpponent).size(),
-                nameOf(topOpponent) + " (" + positionNameOf(topOpponent) + ")",
+                rightVisible ? CardSorter.sortedCopy(handOf(rightOpponent), gameType) : List.of(),
+                rightVisible,
+                handOf(rightOpponent).size(),
+                nameOf(rightOpponent) + " (" + positionNameOf(rightOpponent) + ")",
                 leftVisible ? CardSorter.sortedCopy(handOf(leftOpponent), gameType) : List.of(),
                 leftVisible,
                 handOf(leftOpponent).size(),
@@ -347,6 +366,11 @@ public class MultiplayerGameController {
     }
 
     private void passBidding(PlayerSeat seat) {
+        if (forehandFinalDecision) {
+            forehandPassesOutDeal(seat);
+            return;
+        }
+
         if (waitingForBidAnswer) {
             if (seat != biddingResponder) {
                 status = nameOf(seat) + " nie może teraz pasować. Odpowiada " + nameOf(biddingResponder) + ".";
@@ -384,14 +408,60 @@ public class MultiplayerGameController {
             return;
         }
 
-        if (currentBid == 0) {
-            currentBid = 18;
+        if (currentBid == 0 && pairWinner == seatWithPosition(HandPosition.FOREHAND)) {
+            enterForehandFinalDecision();
+            return;
         }
+
         highestBidder = pairWinner;
         startDeclarerDecision();
     }
 
+    private void enterForehandFinalDecision() {
+        forehandFinalDecision = true;
+        biddingAsker = seatWithPosition(HandPosition.FOREHAND);
+        biddingResponder = null;
+        waitingForBidAnswer = false;
+        highestBidder = null;
+        status = status + " Środek i zadek spasowali bez licytacji. Przodek "
+                + nameOf(biddingAsker)
+                + " może zagrać za 18 albo spasować. Jeśli spasuje, przechodzimy do następnego rozdania.";
+    }
+
+    private void forehandDeclaresMinimumGame(PlayerSeat seat) {
+        PlayerSeat forehand = seatWithPosition(HandPosition.FOREHAND);
+        if (seat != forehand) {
+            status = nameOf(seat) + " nie może teraz licytować. Decyzję ma przodek: " + nameOf(forehand) + ".";
+            return;
+        }
+
+        currentBid = 18;
+        highestBidder = forehand;
+        forehandFinalDecision = false;
+        status = "Przodek " + nameOf(forehand) + " decyduje się grać i licytuje 18.";
+        startDeclarerDecision();
+    }
+
+    private void forehandPassesOutDeal(PlayerSeat seat) {
+        PlayerSeat forehand = seatWithPosition(HandPosition.FOREHAND);
+        if (seat != forehand) {
+            status = nameOf(seat) + " nie może teraz pasować. Decyzję ma przodek: " + nameOf(forehand) + ".";
+            return;
+        }
+
+        phase = GamePhase.FINISHED;
+        finished = true;
+        forehandFinalDecision = false;
+        status = "Przodek " + nameOf(forehand)
+                + " też pasuje. Wszyscy spasowali, więc rozdanie " + currentDealNumber + "/" + TOTAL_DEALS
+                + " kończy się bez gry."
+                + (currentDealNumber < TOTAL_DEALS
+                ? " Można przejść do kolejnego rozdania."
+                : " " + gameOverSummary());
+    }
+
     private void startDeclarerDecision() {
+        forehandFinalDecision = false;
         declarerSeat = highestBidder;
         nextPlayer = declarerSeat;
         phase = GamePhase.DECLARER_DECISION;
@@ -410,6 +480,9 @@ public class MultiplayerGameController {
 
     private void playCardFor(PlayerSeat player, Karta card) {
         handOf(player).remove(card);
+        if (currentTrick.isEmpty()) {
+            lastCompletedTrick.clear();
+        }
         currentTrick.add(new PlayedCard(player, card));
 
         if (currentTrick.size() == 3) {
@@ -420,7 +493,7 @@ public class MultiplayerGameController {
             return;
         }
 
-        nextPlayer = player.nextClockwise();
+        nextPlayer = nextClockwiseSeat(player);
     }
 
     private void collectCurrentTrick() {
@@ -435,6 +508,8 @@ public class MultiplayerGameController {
             opponentsWonTricks++;
         }
 
+        lastCompletedTrick.clear();
+        lastCompletedTrick.addAll(currentTrick);
         currentTrick.clear();
         nextPlayer = winner.player();
         lastTrickSummary = "Lewę zebrał " + nameOf(winner.player())
@@ -452,6 +527,9 @@ public class MultiplayerGameController {
 
         rebuildRoundForScore();
         WynikGry result = round.obliczWynik();
+        int gameValue = round.obliczWartoscGry();
+        int scoreDelta = result.wygrana ? gameValue : Math.min(result.wynik, -2 * gameValue);
+        totalScores.merge(declarerSeat, scoreDelta, Integer::sum);
 
         phase = GamePhase.FINISHED;
         finished = true;
@@ -461,11 +539,12 @@ public class MultiplayerGameController {
                 + ". Licytacja: " + currentBid
                 + ". Lewy rozgrywającego: " + declarerWonTricks
                 + ", lewy przeciwników: " + opponentsWonTricks
-                + ". Wynik z Projekt_PIO: " + outcome
-                + ", wartość/oczka = " + result.wynik + "."
+                + ". Wynik rozdania: " + outcome
+                + ", zmiana punktów rozgrywającego = " + scoreDelta + ". "
+                + scoreSummary()
                 + (currentDealNumber < TOTAL_DEALS
                 ? " Można rozpocząć kolejne rozdanie."
-                : " To było ostatnie rozdanie tej rozgrywki." );
+                : " " + gameOverSummary());
     }
 
     private void rebuildRoundForScore() {
@@ -545,6 +624,9 @@ public class MultiplayerGameController {
         if (phase != GamePhase.BIDDING || finished) {
             return false;
         }
+        if (forehandFinalDecision) {
+            return seat == seatWithPosition(HandPosition.FOREHAND);
+        }
         return waitingForBidAnswer ? seat == biddingResponder : seat == biddingAsker;
     }
 
@@ -553,6 +635,9 @@ public class MultiplayerGameController {
             return false;
         }
         if (phase == GamePhase.BIDDING) {
+            if (forehandFinalDecision) {
+                return seat == seatWithPosition(HandPosition.FOREHAND);
+            }
             return waitingForBidAnswer ? seat == biddingResponder : seat == biddingAsker;
         }
         return phase == GamePhase.PLAYING && seat == nextPlayer;
@@ -561,6 +646,9 @@ public class MultiplayerGameController {
     private int nextBidValueFor(PlayerSeat seat) {
         if (phase != GamePhase.BIDDING) {
             return 0;
+        }
+        if (forehandFinalDecision) {
+            return 18;
         }
         if (waitingForBidAnswer) {
             return currentBid;
@@ -572,6 +660,9 @@ public class MultiplayerGameController {
         if (phase != GamePhase.BIDDING) {
             return "Licytacja zakończona";
         }
+        if (forehandFinalDecision) {
+            return seat == seatWithPosition(HandPosition.FOREHAND) ? "Gram 18" : "Czekaj";
+        }
         if (waitingForBidAnswer) {
             return seat == biddingResponder ? "Tak (" + currentBid + ")" : "Czekaj";
         }
@@ -581,7 +672,7 @@ public class MultiplayerGameController {
 
     private String passActionTextFor(PlayerSeat seat) {
         if (phase == GamePhase.BIDDING) {
-            return "Pas";
+            return forehandFinalDecision ? "Pas — następne rozdanie" : "Pas";
         }
         return "Poddaj rozdanie";
     }
@@ -596,6 +687,16 @@ public class MultiplayerGameController {
                 .toList();
     }
 
+    private List<PlayedCard> displayedTrick() {
+        return currentTrick.isEmpty() ? lastCompletedTrick : currentTrick;
+    }
+
+    private List<Karta> displayedTrickCards() {
+        return displayedTrick().stream()
+                .map(PlayedCard::card)
+                .toList();
+    }
+
     private boolean allHandsAreEmpty() {
         return hands.values().stream().allMatch(List::isEmpty);
     }
@@ -606,12 +707,54 @@ public class MultiplayerGameController {
         }
     }
 
-    private List<PlayerSeat> opponentsOf(PlayerSeat seat) {
-        return switch (seat) {
-            case DECLARER -> List.of(PlayerSeat.OPPONENT_ONE, PlayerSeat.OPPONENT_TWO);
-            case OPPONENT_ONE -> List.of(PlayerSeat.OPPONENT_TWO, PlayerSeat.DECLARER);
-            case OPPONENT_TWO -> List.of(PlayerSeat.DECLARER, PlayerSeat.OPPONENT_ONE);
+    private PlayerSeat leftNeighborOf(PlayerSeat seat) {
+        return nextClockwiseSeat(seat);
+    }
+
+    private PlayerSeat rightNeighborOf(PlayerSeat seat) {
+        HandPosition position = positions.get(seat);
+        if (position == null) {
+            return PlayerSeat.OPPONENT_TWO;
+        }
+        return seatWithPosition(previousClockwisePosition(position));
+    }
+
+    private PlayerSeat nextClockwiseSeat(PlayerSeat seat) {
+        HandPosition position = positions.get(seat);
+        if (position == null) {
+            return seat.nextClockwise();
+        }
+        return seatWithPosition(nextClockwisePosition(position));
+    }
+
+    private HandPosition nextClockwisePosition(HandPosition position) {
+        return switch (position) {
+            case FOREHAND -> HandPosition.MIDDLEHAND;
+            case MIDDLEHAND -> HandPosition.REARHAND;
+            case REARHAND -> HandPosition.FOREHAND;
         };
+    }
+
+    private HandPosition previousClockwisePosition(HandPosition position) {
+        return switch (position) {
+            case FOREHAND -> HandPosition.REARHAND;
+            case MIDDLEHAND -> HandPosition.FOREHAND;
+            case REARHAND -> HandPosition.MIDDLEHAND;
+        };
+    }
+
+    private PlayedCard trickCardPlayedBy(PlayerSeat seat) {
+        return displayedTrick().stream()
+                .filter(played -> played.player() == seat)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String trickLabel(PlayedCard playedCard) {
+        if (playedCard == null) {
+            return "";
+        }
+        return nameOf(playedCard.player()) + " (" + positionNameOf(playedCard.player()) + ")";
     }
 
     private boolean isOpponentHandVisibleFor(PlayerSeat viewer, PlayerSeat opponent) {
@@ -643,6 +786,13 @@ public class MultiplayerGameController {
     private String personalStatusFor(PlayerSeat seat) {
         String base = status;
         if (phase == GamePhase.BIDDING) {
+            if (forehandFinalDecision) {
+                PlayerSeat forehand = seatWithPosition(HandPosition.FOREHAND);
+                if (seat == forehand) {
+                    return base + " To Twoja decyzja: grasz za 18 albo pasujesz całe rozdanie.";
+                }
+                return base + " Czekasz na decyzję przodka: " + nameOf(forehand) + ".";
+            }
             if (waitingForBidAnswer) {
                 if (seat == biddingResponder) {
                     return base + " To Twoja odpowiedź: Tak albo Pas.";
@@ -661,6 +811,23 @@ public class MultiplayerGameController {
             return base + (seat == nextPlayer ? " To Twój ruch." : " Czekasz na ruch gracza: " + nameOf(nextPlayer) + ".");
         }
         return base;
+    }
+
+    private String scoreSummary() {
+        return "Tabela: "
+                + nameOf(PlayerSeat.DECLARER) + " " + totalScores.getOrDefault(PlayerSeat.DECLARER, 0) + " pkt, "
+                + nameOf(PlayerSeat.OPPONENT_ONE) + " " + totalScores.getOrDefault(PlayerSeat.OPPONENT_ONE, 0) + " pkt, "
+                + nameOf(PlayerSeat.OPPONENT_TWO) + " " + totalScores.getOrDefault(PlayerSeat.OPPONENT_TWO, 0) + " pkt.";
+    }
+
+    private String gameOverSummary() {
+        PlayerSeat winner = totalScores.entrySet().stream()
+                .max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey)
+                .orElse(PlayerSeat.DECLARER);
+        return "Koniec całej rozgrywki po " + TOTAL_DEALS + " rozdaniach. Wygrał: "
+                + nameOf(winner) + " z wynikiem " + totalScores.getOrDefault(winner, 0) + " pkt. "
+                + scoreSummary();
     }
 
     private void assignPositionsForCurrentDeal() {
