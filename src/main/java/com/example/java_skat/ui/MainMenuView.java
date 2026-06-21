@@ -102,7 +102,7 @@ public class MainMenuView extends BorderPane {
             }
         });
 
-        Label info = new Label("Tryb sieciowy ma przygotowany ekran dołączania i poczekalnię. Sama rozgrywka sieciowa może później użyć pakietu network.");
+        Label info = new Label("Tryb sieciowy działa na localhost: jedna instancja tworzy grę, dwie kolejne dołączają pod ten sam host i port.");
         info.getStyleClass().add("small-info-label");
         info.setWrapText(true);
         info.setAlignment(Pos.CENTER);

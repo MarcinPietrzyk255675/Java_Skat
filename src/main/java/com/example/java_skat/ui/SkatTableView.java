@@ -31,6 +31,8 @@ public class SkatTableView extends BorderPane {
 
     private final Label topOpponentLabel = new Label();
     private final Label leftOpponentLabel = new Label();
+    private final Label dealLabel = new Label();
+    private final Label positionsLabel = new Label();
     private final Label bidLabel = new Label();
     private final Label contractLabel = new Label();
     private final Label statusLabel = new Label();
@@ -78,6 +80,9 @@ public class SkatTableView extends BorderPane {
         setSkat(snapshot.skat(), snapshot.skatVisible(), snapshot.phase());
         setOpponentCardCounts(snapshot.topOpponentCardCount(), snapshot.leftOpponentCardCount());
         setBidInfo(snapshot);
+        dealLabel.setText("Rozdanie: " + snapshot.dealNumber() + "/" + snapshot.totalDeals()
+                + " | Twoja pozycja: " + snapshot.playerPositionName());
+        positionsLabel.setText(snapshot.positionSummary());
         contractLabel.setText("Gra: " + snapshot.contractName());
         statusLabel.setText(snapshot.status());
         collectedCardsLabel.setText("Karty zebrane przez gracza: " + snapshot.collectedCardCount());
@@ -91,19 +96,20 @@ public class SkatTableView extends BorderPane {
         contractControls.setManaged(contractSelection);
 
         bidButton.setText(bidding ? "Licytuj " + snapshot.nextBid() : "Licytacja zakończona");
-        bidButton.setDisable(!bidding || snapshot.nextBid() == 0 || snapshot.finished());
+        bidButton.setDisable(!snapshot.canBid() || snapshot.nextBid() == 0 || snapshot.finished());
 
         updateContractControls(snapshot);
         takeSkatButton.setDisable(!snapshot.canTakeSkatBeforeContract() || snapshot.finished());
         chooseGameWithoutSkatButton.setDisable(!snapshot.canChooseGameWithoutSkat() || snapshot.finished());
-        confirmContractButton.setDisable(!contractSelection || snapshot.finished());
+        confirmContractButton.setDisable(!snapshot.canConfirmContract() || snapshot.finished());
 
         discardCardButton.setText(skatExchange ? "Odłóż kartę (zostało: " + snapshot.cardsToDiscard() + ")" : "Odłóż kartę");
-        discardCardButton.setDisable(!skatExchange || snapshot.finished() || snapshot.playerHand().isEmpty());
+        discardCardButton.setDisable(!snapshot.canDiscard() || snapshot.finished() || snapshot.playerHand().isEmpty());
 
-        playCardButton.setDisable(!playing || snapshot.finished() || snapshot.playerHand().isEmpty());
+        playCardButton.setDisable(!snapshot.canPlay() || snapshot.finished() || snapshot.playerHand().isEmpty());
         passButton.setText(bidding ? "Pas" : "Poddaj rozdanie");
-        passButton.setDisable(snapshot.finished());
+        passButton.setDisable(!snapshot.canPass() || snapshot.finished());
+        newDealButton.setDisable(!snapshot.canNewDeal());
     }
 
     public void setOnPlayCard(Consumer<Karta> onPlayCard) {
@@ -203,12 +209,15 @@ public class SkatTableView extends BorderPane {
         topArea.setPadding(new Insets(12));
 
         topOpponentLabel.getStyleClass().add("opponent-label");
+        dealLabel.getStyleClass().add("small-info-label");
+        positionsLabel.getStyleClass().add("small-info-label");
+        positionsLabel.setWrapText(true);
         bidLabel.getStyleClass().add("small-info-label");
         contractLabel.getStyleClass().add("small-info-label");
         statusLabel.getStyleClass().add("status-label");
         statusLabel.setWrapText(true);
 
-        topArea.getChildren().addAll(topOpponentLabel, bidLabel, contractLabel, statusLabel);
+        topArea.getChildren().addAll(topOpponentLabel, dealLabel, positionsLabel, bidLabel, contractLabel, statusLabel);
         setTop(topArea);
     }
 
@@ -349,7 +358,7 @@ public class SkatTableView extends BorderPane {
     }
 
     private void updateContractControls(GameSnapshot snapshot) {
-        boolean disabled = snapshot.phase() != GamePhase.CONTRACT_SELECTION || snapshot.finished();
+        boolean disabled = !snapshot.canConfirmContract() || snapshot.finished();
         boolean restrictedAfterSkat = snapshot.declarationsRestrictedAfterSkat();
         boolean handRequired = snapshot.handRequired();
         TypGry selectedType = gameTypeComboBox.getValue();

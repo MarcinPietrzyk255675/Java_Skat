@@ -1,5 +1,7 @@
 package com.example.java_skat.network;
 
+import com.example.java_skat.game.GamePhase;
+
 import java.util.List;
 
 public record GameStateMessage(
@@ -10,7 +12,27 @@ public record GameStateMessage(
         int topOpponentCardCount,
         int leftOpponentCardCount,
         int collectedCardCount,
+        GamePhase phase,
+        int currentBid,
+        int nextBid,
+        String highestBidderName,
+        String contractName,
+        int cardsToDiscard,
+        boolean canTakeSkatBeforeContract,
+        boolean canChooseGameWithoutSkat,
+        boolean declarationsRestrictedAfterSkat,
+        boolean handRequired,
+        boolean canBid,
+        boolean canConfirmContract,
+        boolean canDiscard,
+        boolean canPlay,
+        boolean canPass,
+        boolean canNewDeal,
         String status,
-        boolean finished
+        boolean finished,
+        int dealNumber,
+        int totalDeals,
+        String playerPositionName,
+        String positionSummary
 ) implements SkatMessage {
 }

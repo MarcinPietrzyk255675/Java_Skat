@@ -43,6 +43,7 @@ public class LocalGameController {
     private int declarerWonTricks;
     private int opponentsWonTricks;
     private boolean skatVisible;
+    private boolean skatTakenBeforeContract;
     private boolean finished;
     private String lastTrickSummary;
     private String status;
@@ -69,8 +70,8 @@ public class LocalGameController {
         opponentTwoHand.addAll(deck.subList(HAND_SIZE * 2, HAND_SIZE * 3));
         skatCards.addAll(deck.subList(HAND_SIZE * 3, HAND_SIZE * 3 + SKAT_SIZE));
 
-        contract = GameContract.defaultGrand();
-        gameType = contract.toCore();
+        contract = null;
+        gameType = GameContract.defaultGrand().toCore();
         sortHands();
 
         opponentMaximumBids.put(PlayerSeat.OPPONENT_ONE, BiddingStrength.estimateMaximumBid(opponentOneHand));
@@ -84,6 +85,7 @@ public class LocalGameController {
         declarerWonTricks = 0;
         opponentsWonTricks = 0;
         skatVisible = false;
+        skatTakenBeforeContract = false;
         finished = false;
         lastTrickSummary = "";
         status = "Nowe rozdanie. Trwa licytacja. Możesz zalicytować " + nextBidText() + " albo spasować.";
@@ -118,30 +120,61 @@ public class LocalGameController {
         }
     }
 
-    public void confirmContract(GameContract selectedContract) {
-        if (phase != GamePhase.CONTRACT_SELECTION) {
-            status = "Rodzaj gry wybierasz dopiero po wygraniu licytacji.";
-            return;
-        }
-
-        contract = selectedContract;
-        gameType = contract.toCore();
-        sortHands();
-
-        if (contract.hand()) {
-            configureCoreRound();
-            startCardPlay("Wybrałeś " + contract.displayName()
-                    + ". To gra z ręki, więc nie dobierasz skata. Wychodzisz do pierwszej lewy.");
+    public void takeSkatBeforeContract() {
+        if (phase != GamePhase.DECLARER_DECISION) {
+            status = "Skat możesz dobrać tylko bezpośrednio po wygraniu licytacji, zanim zadeklarujesz grę.";
             return;
         }
 
         playerHand.addAll(skatCards);
         skatCards.clear();
         skatVisible = true;
-        phase = GamePhase.SKAT_EXCHANGE;
+        skatTakenBeforeContract = true;
+        phase = GamePhase.CONTRACT_SELECTION;
         sortHands();
+        status = "Dobrałeś skat przed wyborem gry. Teraz wybierz kolor, grand albo null. "
+                + "Po dobraniu skata nie możesz wybrać hand, zapowiedzi krawca, zapowiedzi szwarca ani ouvert, "
+                + "z wyjątkiem ouvert przy grze null. Po wyborze gry odłożysz dwie karty do skata.";
+    }
+
+    public void chooseGameWithoutTakingSkat() {
+        if (phase != GamePhase.DECLARER_DECISION) {
+            status = "Decyzję o grze bez skata podejmujesz tylko po wygraniu licytacji.";
+            return;
+        }
+
+        skatTakenBeforeContract = false;
+        skatVisible = false;
+        phase = GamePhase.CONTRACT_SELECTION;
+        status = "Wybrałeś grę bez dobierania skata. Teraz zadeklaruj rodzaj gry z ręki i ewentualne zapowiedzi.";
+    }
+
+    public void confirmContract(GameContract selectedContract) {
+        if (phase != GamePhase.CONTRACT_SELECTION) {
+            status = "Najpierw zdecyduj: weź skat albo graj bez dobierania skata.";
+            return;
+        }
+
+        if (skatTakenBeforeContract && hasForbiddenDeclarationAfterTakingSkat(selectedContract)) {
+            status = "Po dobraniu skata nie możesz zadeklarować hand, krawca, szwarca ani ouvert. "
+                    + "Wyjątek: ouvert jest dostępny tylko przy grze null.";
+            return;
+        }
+
+        contract = normalizeContractForCurrentPath(selectedContract);
+        gameType = contract.toCore();
+        sortHands();
+
+        if (!skatTakenBeforeContract) {
+            configureCoreRound();
+            startCardPlay("Wybrałeś " + contract.displayName()
+                    + ". To gra z ręki, więc skat zostaje zakryty. Wychodzisz do pierwszej lewy.");
+            return;
+        }
+
         status = "Wybrałeś " + contract.displayName()
-                + ". Dobrałeś skat do ręki. Wybierz dwie karty i kliknij \"Odłóż kartę\".";
+                + ". Skat jest już w ręce. Wybierz dwie karty i kliknij \"Odłóż kartę\".";
+        phase = GamePhase.SKAT_EXCHANGE;
     }
 
     public void discardSelectedCardToSkat(Karta card) {
@@ -174,6 +207,11 @@ public class LocalGameController {
     public void playCard(Karta card) {
         if (phase == GamePhase.BIDDING) {
             status = "Najpierw zakończ licytację.";
+            return;
+        }
+
+        if (phase == GamePhase.DECLARER_DECISION) {
+            status = "Najpierw zdecyduj, czy bierzesz skat, czy grasz bez dobierania skata.";
             return;
         }
 
@@ -247,9 +285,42 @@ public class LocalGameController {
                 highestBidder == null ? "brak" : highestBidder.displayName(),
                 contract == null ? "brak" : contract.displayName(),
                 phase == GamePhase.SKAT_EXCHANGE ? SKAT_SIZE - skatCards.size() : 0,
+                phase == GamePhase.DECLARER_DECISION,
+                phase == GamePhase.DECLARER_DECISION,
+                skatTakenBeforeContract && phase == GamePhase.CONTRACT_SELECTION,
+                !skatTakenBeforeContract && phase == GamePhase.CONTRACT_SELECTION,
+                phase == GamePhase.BIDDING && !finished,
+                phase == GamePhase.CONTRACT_SELECTION && !finished,
+                phase == GamePhase.SKAT_EXCHANGE && !finished,
+                phase == GamePhase.PLAYING && !finished,
+                !finished,
+                true,
                 status,
                 finished
         );
+    }
+
+    private GameContract normalizeContractForCurrentPath(GameContract selectedContract) {
+        if (!skatTakenBeforeContract) {
+            return new GameContract(
+                    selectedContract.type(),
+                    selectedContract.color(),
+                    true,
+                    selectedContract.schneiderAnnounced(),
+                    selectedContract.schwarzAnnounced(),
+                    selectedContract.ouvert()
+            );
+        }
+
+        return selectedContract;
+    }
+
+    private boolean hasForbiddenDeclarationAfterTakingSkat(GameContract selectedContract) {
+        if (selectedContract.hand() || selectedContract.schneiderAnnounced() || selectedContract.schwarzAnnounced()) {
+            return true;
+        }
+
+        return selectedContract.ouvert() && selectedContract.type() != TypGry.NULL;
     }
 
     private void runAutomaticBidding(StringBuilder biddingLog) {
@@ -300,12 +371,12 @@ public class LocalGameController {
     }
 
     private void startContractSelectionAfterWonBidding(String biddingLog) {
-        phase = GamePhase.CONTRACT_SELECTION;
+        phase = GamePhase.DECLARER_DECISION;
         finished = false;
         nextPlayer = PlayerSeat.DECLARER;
         status = biddingLog
                 + "Wygrałeś licytację za " + currentBid
-                + ". Wybierz rodzaj gry i opcje. Jeśli nie zaznaczysz hand, po zatwierdzeniu dobierzesz skat i odłożysz dwie karty.";
+                + ". Teraz najpierw zdecyduj: weź skat przed deklaracją gry albo graj bez dobierania skata.";
     }
 
     private void finishAfterLostBidding(String biddingLog) {
