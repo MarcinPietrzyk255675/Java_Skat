@@ -15,7 +15,7 @@ public class ConsoleMain {
 
 			gameController.dealCards();
 
-			System.out.println("Deal " + GameController.getDealNumber() + "/" + GameController.getMaxDeals());
+			System.out.println("Deal " + gameController.getDealNumber() + "/" + GameController.getMaxDeals());
 			for (PlayerId player : PlayerId.values()) {
 				System.out.println(player.getDisplayName() + "-" +
 				                   gameController.getDealState().getPosition(player).displayName() + ": ");
@@ -24,6 +24,34 @@ public class ConsoleMain {
 
 			System.out.println("Skat: ");
 			gameController.getDealState().getSkat().forEach(System.out::println);
+
+
+			System.out.println("Licytacja:");
+			System.out.println("Pytający: " + gameController.getDealState().getBiddingAsker().getDisplayName());
+			System.out.println(
+					"Odpowiadający: " + gameController.getDealState().getBiddingResponder().getDisplayName());
+
+			gameController.bid(gameController.getDealState().getBiddingAsker());
+			System.out.println("Pytanie o: " + gameController.getDealState().getCurrentBid());
+
+			gameController.acceptBid(gameController.getDealState().getBiddingResponder());
+			System.out.println("Prowadzi: " + gameController.getDealState().getHighestBidder().getDisplayName());
+
+			gameController.pass(gameController.getDealState().getBiddingAsker());
+
+			System.out.println("Po pasie do licytacji wchodzi zadek:");
+			System.out.println("Pytający: " + gameController.getDealState().getBiddingAsker().getDisplayName());
+			System.out.println(
+					"Odpowiadający: " + gameController.getDealState().getBiddingResponder().getDisplayName());
+
+			gameController.bid(gameController.getDealState().getBiddingAsker());
+			System.out.println("Pytanie o: " + gameController.getDealState().getCurrentBid());
+
+			gameController.pass(gameController.getDealState().getBiddingResponder());
+
+			System.out.println(
+					"Zwycięzca licytacji: " + gameController.getDealState().getHighestBidder().getDisplayName());
+
 		}
 	}
 }

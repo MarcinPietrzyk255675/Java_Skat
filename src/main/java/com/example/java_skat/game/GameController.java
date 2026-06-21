@@ -13,7 +13,7 @@ public class GameController {
 	private DealState dealState;
 
 
-	private static int dealNumber = 0;
+	private int dealNumber = 0;
 
 	public void dealCards() {
 		if (dealNumber >= MAX_DEALS) {
@@ -30,13 +30,27 @@ public class GameController {
 		dealState.getHand(PlayerId.PLAYER_2).addAll(deck.subList(HAND_SIZE, HAND_SIZE * 2));
 		dealState.getHand(PlayerId.PLAYER_3).addAll(deck.subList(HAND_SIZE * 2, HAND_SIZE * 3));
 		dealState.getSkat().addAll(deck.subList(HAND_SIZE * 3, HAND_SIZE * 3 + SKAT_SIZE));
+
+		startBidding();
+	}
+
+	private void startBidding() {
+		PlayerId forehand = playerWithPosition(PlayerPosition.FOREHAND);
+		PlayerId middlehand = playerWithPosition(PlayerPosition.MIDDLEHAND);
+
+		dealState.setBiddingStatus(BiddingStatus.IN_PROGRESS);
+		dealState.setBiddingAsker(middlehand);
+		dealState.setBiddingResponder(forehand);
+		dealState.setCurrentBid(0);
+		dealState.setHighestBidder(null);
+		dealState.setRearhandJoinedBidding(false);
 	}
 
 	public DealState getDealState() {
 		return dealState;
 	}
 
-	public static int getDealNumber() {
+	public int getDealNumber() {
 		return dealNumber;
 	}
 
@@ -50,6 +64,67 @@ public class GameController {
 		dealState.setPosition(players[shift], PlayerPosition.FOREHAND);
 		dealState.setPosition(players[(shift + 1) % players.length], PlayerPosition.MIDDLEHAND);
 		dealState.setPosition(players[(shift + 2) % players.length], PlayerPosition.REARHAND);
+	}
+
+	private PlayerId playerWithPosition(PlayerPosition position) {
+		for (PlayerId player : PlayerId.values()) {
+			if (dealState.getPosition(player) == position) {
+				return player;
+			}
+		}
+		throw new IllegalStateException("No player with position " + position);
+	}
+
+	public void bid(PlayerId playerId) {
+		if (dealState.getBiddingStatus() != BiddingStatus.IN_PROGRESS) {
+			throw new IllegalStateException("Bidding is not in progress");
+		}
+		if (playerId != dealState.getBiddingAsker()) {
+			throw new IllegalStateException("It is not your turn to ask a bid");
+		}
+		int nextBid = BidLadder.nextAfter(dealState.getCurrentBid()).orElseThrow(
+				() -> new IllegalStateException("No more bids"));
+		dealState.setCurrentBid(nextBid);
+	}
+
+	public void acceptBid(PlayerId playerId) {
+		if (dealState.getBiddingStatus() != BiddingStatus.IN_PROGRESS) {
+			throw new IllegalStateException("Bidding is not in progress");
+		}
+		if (playerId != dealState.getBiddingResponder()) {
+			throw new IllegalStateException("It is not your turn to accept a bid");
+		}
+		if (dealState.getCurrentBid() == 0) {
+			throw new IllegalStateException("There is no bid to accept");
+		}
+
+		dealState.setHighestBidder(playerId);
+	}
+
+	public void pass(PlayerId playerId) {
+		if (dealState.getBiddingStatus() != BiddingStatus.IN_PROGRESS) {
+			throw new IllegalStateException("Bidding is not in progress");
+		}
+		if (playerId != dealState.getBiddingResponder() && playerId != dealState.getBiddingAsker()) {
+			throw new IllegalStateException("It is not your turn to pass");
+		}
+
+		PlayerId remainingPlayer = dealState.getBiddingResponder() == playerId ? dealState.getBiddingAsker() :
+		                           dealState.getBiddingResponder();
+
+
+		dealState.setHighestBidder(remainingPlayer);
+
+		if (!dealState.isRearhandJoinedBidding()) {
+			PlayerId rearhand = playerWithPosition(PlayerPosition.REARHAND);
+
+			dealState.setBiddingResponder(remainingPlayer);
+			dealState.setBiddingAsker(rearhand);
+			dealState.setRearhandJoinedBidding(true);
+			return;
+		}
+
+		dealState.setBiddingStatus(BiddingStatus.FINISHED);
 	}
 
 }
