@@ -11,8 +11,8 @@ import pl.skat.core.Karta;
 import java.io.InputStream;
 
 public class CardView extends StackPane {
-    public static final double CARD_WIDTH = 112;
-    public static final double CARD_HEIGHT = 168;
+    public static final double CARD_WIDTH = 82;
+    public static final double CARD_HEIGHT = 123;
 
     private final Karta card;
     private boolean selected;
@@ -44,7 +44,7 @@ public class CardView extends StackPane {
 
         if (selected) {
             getStyleClass().add("card-selected");
-            setTranslateY(-16);
+            setTranslateY(-9);
         } else {
             setTranslateY(0);
         }

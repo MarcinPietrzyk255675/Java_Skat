@@ -13,8 +13,8 @@ public class PlayerHandView extends HBox {
     private Consumer<Karta> onCardSelected;
 
     public PlayerHandView() {
-        setSpacing(8);
-        setAlignment(Pos.CENTER);
+        setSpacing(6);
+        setAlignment(Pos.CENTER_LEFT);
         getStyleClass().add("player-hand");
     }
 

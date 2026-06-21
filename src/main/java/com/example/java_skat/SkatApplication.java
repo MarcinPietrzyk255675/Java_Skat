@@ -1,8 +1,8 @@
 package com.example.java_skat;
 
 import com.example.java_skat.game.GameContract;
-import com.example.java_skat.game.LocalGameController;
 import com.example.java_skat.network.BidMessage;
+import com.example.java_skat.network.CardDto;
 import com.example.java_skat.network.ChooseGameWithoutSkatMessage;
 import com.example.java_skat.network.ConfirmContractMessage;
 import com.example.java_skat.network.DiscardCardMessage;
@@ -19,7 +19,6 @@ import com.example.java_skat.network.SkatClientConnection;
 import com.example.java_skat.network.SkatMessage;
 import com.example.java_skat.network.TakeSkatMessage;
 import com.example.java_skat.network.WaitingRoomMessage;
-import com.example.java_skat.network.CardDto;
 import com.example.java_skat.ui.MainMenuView;
 import com.example.java_skat.ui.SkatTableView;
 import com.example.java_skat.ui.WaitingRoomView;
@@ -28,27 +27,26 @@ import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import pl.skat.core.Karta;
 
 import java.io.IOException;
 import java.net.URL;
 
 public class SkatApplication extends Application {
-    private static final int WIDTH = 1100;
-    private static final int HEIGHT = 720;
+    private static final int WIDTH = 1180;
+    private static final int HEIGHT = 780;
 
     private Stage stage;
-    private LocalGameController gameController;
     private SkatTableView tableView;
     private WaitingRoomView waitingRoomView;
     private SkatClientConnection networkClient;
     private MultiplayerGameServer embeddedServer;
-    private boolean networkMode;
 
     @Override
     public void start(Stage stage) {
         this.stage = stage;
         stage.setTitle("Java Skat");
+        stage.setMinWidth(980);
+        stage.setMinHeight(700);
         showMainMenu();
         stage.show();
     }
@@ -61,23 +59,10 @@ public class SkatApplication extends Application {
 
     private void showMainMenu() {
         closeNetworkResources();
-        networkMode = false;
         MainMenuView menuView = new MainMenuView();
-        menuView.setOnLocalGame(this::showLocalGame);
         menuView.setOnHostGame(() -> hostNetworkGame(menuView.playerName(), menuView.port()));
         menuView.setOnJoinGame(() -> joinNetworkGame(menuView.playerName(), menuView.host(), menuView.port()));
         setRoot(menuView);
-    }
-
-    private void showLocalGame() {
-        closeNetworkResources();
-        networkMode = false;
-        gameController = new LocalGameController();
-        tableView = new SkatTableView();
-
-        configureLocalActions();
-        renderCurrentLocalState();
-        setRoot(tableView);
     }
 
     private void hostNetworkGame(String playerName, int port) {
@@ -92,7 +77,6 @@ public class SkatApplication extends Application {
     }
 
     private void joinNetworkGame(String playerName, String host, int port) {
-        networkMode = true;
         waitingRoomView = new WaitingRoomView("Poczekalnia gry sieciowej", playerName, host, port);
         waitingRoomView.setOnBack(this::showMainMenu);
         setRoot(waitingRoomView);
@@ -122,54 +106,12 @@ public class SkatApplication extends Application {
     }
 
     private void renderNetworkGame(GameStateMessage message) {
-        if (tableView == null || !networkMode) {
+        if (tableView == null) {
             tableView = new SkatTableView();
             configureNetworkActions();
             setRoot(tableView);
         }
         tableView.render(MessageMapper.toSnapshot(message));
-    }
-
-    private void configureLocalActions() {
-        tableView.setOnPlayCard(card -> {
-            gameController.playCard(card);
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnDiscardCard(card -> {
-            gameController.discardSelectedCardToSkat(card);
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnConfirmContract(contract -> {
-            gameController.confirmContract(contract);
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnTakeSkat(() -> {
-            gameController.takeSkatBeforeContract();
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnChooseGameWithoutSkat(() -> {
-            gameController.chooseGameWithoutTakingSkat();
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnBid(() -> {
-            gameController.bid();
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnPass(() -> {
-            gameController.pass();
-            renderCurrentLocalState();
-        });
-
-        tableView.setOnNewDeal(() -> {
-            gameController.startNewDeal();
-            renderCurrentLocalState();
-        });
     }
 
     private void configureNetworkActions() {
@@ -199,12 +141,8 @@ public class SkatApplication extends Application {
         }
     }
 
-    private void renderCurrentLocalState() {
-        tableView.render(gameController.snapshot());
-    }
-
     private void showConnectionError(String message) {
-        if (waitingRoomView != null && networkMode) {
+        if (waitingRoomView != null) {
             waitingRoomView.setWaitingState(message);
             return;
         }

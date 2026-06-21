@@ -14,11 +14,9 @@ public class MainMenuView extends BorderPane {
     private final TextField hostField = new TextField("localhost");
     private final TextField portField = new TextField("8080");
 
-    private final Button localGameButton = new Button("Gra lokalna");
-    private final Button hostGameButton = new Button("Utwórz grę dla znajomych");
+    private final Button hostGameButton = new Button("Utwórz grę na localhost");
     private final Button joinGameButton = new Button("Dołącz do gry");
 
-    private Runnable onLocalGame;
     private Runnable onHostGame;
     private Runnable onJoinGame;
 
@@ -51,10 +49,6 @@ public class MainMenuView extends BorderPane {
         }
     }
 
-    public void setOnLocalGame(Runnable onLocalGame) {
-        this.onLocalGame = onLocalGame;
-    }
-
     public void setOnHostGame(Runnable onHostGame) {
         this.onHostGame = onHostGame;
     }
@@ -67,13 +61,14 @@ public class MainMenuView extends BorderPane {
         VBox menu = new VBox(16);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(40));
-        menu.setMaxWidth(520);
+        menu.setMaxWidth(560);
 
         Label title = new Label("Java Skat");
         title.getStyleClass().add("menu-title");
 
-        Label subtitle = new Label("Wybierz tryb gry");
+        Label subtitle = new Label("Tryb uproszczony: tylko 3 graczy przez localhost");
         subtitle.getStyleClass().add("status-label");
+        subtitle.setWrapText(true);
 
         VBox fields = new VBox(8);
         fields.setAlignment(Pos.CENTER_LEFT);
@@ -83,14 +78,9 @@ public class MainMenuView extends BorderPane {
                 labeledField("Port", portField)
         );
 
-        HBox buttons = new HBox(10, localGameButton, hostGameButton, joinGameButton);
+        HBox buttons = new HBox(10, hostGameButton, joinGameButton);
         buttons.setAlignment(Pos.CENTER);
 
-        localGameButton.setOnAction(event -> {
-            if (onLocalGame != null) {
-                onLocalGame.run();
-            }
-        });
         hostGameButton.setOnAction(event -> {
             if (onHostGame != null) {
                 onHostGame.run();
@@ -102,7 +92,7 @@ public class MainMenuView extends BorderPane {
             }
         });
 
-        Label info = new Label("Tryb sieciowy działa na localhost: jedna instancja tworzy grę, dwie kolejne dołączają pod ten sam host i port.");
+        Label info = new Label("Uruchom 3 instancje aplikacji. Pierwsza tworzy grę, dwie pozostałe dołączają na ten sam host i port.");
         info.getStyleClass().add("small-info-label");
         info.setWrapText(true);
         info.setAlignment(Pos.CENTER);
