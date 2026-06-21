@@ -59,7 +59,7 @@ public class MultiplayerGameServer implements AutoCloseable {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : DEFAULT_PORT;
         MultiplayerGameServer server = new MultiplayerGameServer();
         server.start(port);
-        System.out.println("Serwer Skata działa na localhost:" + port + ". Zamknij proces, aby zakończyć.");
+        System.out.println("Serwer Skata działa na porcie " + port + ". Z tego komputera łącz się przez localhost, z LAN przez adres IP hosta.");
     }
 
     private void acceptLoop() {
@@ -188,7 +188,7 @@ public class MultiplayerGameServer implements AutoCloseable {
                 clients.size() >= REQUIRED_PLAYERS,
                 clients.size() >= REQUIRED_PLAYERS
                         ? "Komplet graczy. Rozpoczynamy rozdanie."
-                        : "Czekamy na graczy na localhost. Uruchom kolejne instancje i wybierz Dołącz do gry."
+                        : "Czekamy na graczy. Na tym samym komputerze dołącz przez localhost, a z innego komputera w sieci przez adres IP hosta."
         );
 
         for (ClientSession client : clients) {

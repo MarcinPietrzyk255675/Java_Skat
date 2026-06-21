@@ -4,17 +4,19 @@
 }
 
 .top-info-bar, .bottom-player-area, .side-player-area {
-    -fx-background-color: rgba(0, 0, 0, 0.10);
+    -fx-background-color: rgba(0, 0, 0, 0.04);
+    -fx-padding: 0;
 }
 
 .table-center {
-    -fx-background-color: rgba(255, 255, 255, 0.08);
-    -fx-background-radius: 12;
+    -fx-background-color: rgba(255, 255, 255, 0.035);
+    -fx-background-radius: 6;
+    -fx-padding: 0;
 }
 
 .status-label {
     -fx-text-fill: white;
-    -fx-font-size: 15px;
+    -fx-font-size: 14px;
     -fx-font-weight: bold;
     -fx-alignment: center;
     -fx-text-alignment: center;
@@ -22,12 +24,14 @@
 
 .opponent-label, .section-label, .small-info-label {
     -fx-text-fill: white;
-    -fx-font-size: 13px;
+    -fx-font-size: 12px;
 }
 
 .opponent-label {
     -fx-font-weight: bold;
     -fx-wrap-text: true;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
 }
 
 .section-label {
@@ -40,10 +44,11 @@
     -fx-border-color: transparent;
     -fx-border-width: 0;
     -fx-effect: none;
+    -fx-padding: 0;
 }
 
 .card-selected {
-    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.85), 14, 0.25, 0, 0);
+    -fx-effect: dropshadow(gaussian, rgba(255, 215, 0, 0.9), 16, 0.25, 0, 0);
 }
 
 .card-back {
@@ -52,11 +57,11 @@
 
 .card-fallback-label {
     -fx-background-color: white;
-    -fx-background-radius: 6;
+    -fx-background-radius: 4;
     -fx-text-fill: #111111;
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-padding: 6;
+    -fx-padding: 2;
 }
 
 .card-back .card-fallback-label {
@@ -65,8 +70,8 @@
 }
 
 .button {
-    -fx-font-size: 13px;
-    -fx-padding: 7 11;
+    -fx-font-size: 12px;
+    -fx-padding: 5 9;
 }
 
 .check-box {
@@ -89,32 +94,25 @@
     -fx-padding: 8;
 }
 
-.scroll-pane {
-    -fx-background: transparent;
-    -fx-background-color: transparent;
-    -fx-padding: 0;
-}
-
-.scroll-pane > .viewport {
-    -fx-background-color: transparent;
-}
-
 .player-hand {
-    -fx-padding: 2 0 8 0;
+    -fx-padding: 0;
+    -fx-spacing: 0;
+    -fx-alignment: center;
 }
 
 .mini-card-fallback-label {
     -fx-background-color: white;
     -fx-background-radius: 3;
     -fx-text-fill: #111111;
-    -fx-font-size: 6px;
+    -fx-font-size: 8px;
     -fx-font-weight: bold;
-    -fx-padding: 2;
+    -fx-padding: 1;
 }
 
 .trick-table {
-    -fx-background-color: rgba(0, 0, 0, 0.07);
-    -fx-background-radius: 14;
+    -fx-background-color: rgba(0, 0, 0, 0.02);
+    -fx-background-radius: 6;
+    -fx-padding: 0;
 }
 
 .trick-slot {
@@ -123,7 +121,7 @@
 
 .trick-card-label {
     -fx-text-fill: white;
-    -fx-font-size: 11px;
+    -fx-font-size: 10px;
     -fx-font-weight: bold;
     -fx-alignment: center;
     -fx-text-alignment: center;

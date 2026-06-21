@@ -14,7 +14,7 @@ public class MainMenuView extends BorderPane {
     private final TextField hostField = new TextField("localhost");
     private final TextField portField = new TextField("8080");
 
-    private final Button hostGameButton = new Button("Utwórz grę na localhost");
+    private final Button hostGameButton = new Button("Utwórz grę");
     private final Button joinGameButton = new Button("Dołącz do gry");
 
     private Runnable onHostGame;
@@ -66,7 +66,7 @@ public class MainMenuView extends BorderPane {
         Label title = new Label("Java Skat");
         title.getStyleClass().add("menu-title");
 
-        Label subtitle = new Label("Tryb uproszczony: tylko 3 graczy przez localhost");
+        Label subtitle = new Label("Tryb uproszczony: 3 graczy przez sieć lokalną / localhost");
         subtitle.getStyleClass().add("status-label");
         subtitle.setWrapText(true);
 
@@ -92,7 +92,7 @@ public class MainMenuView extends BorderPane {
             }
         });
 
-        Label info = new Label("Uruchom 3 instancje aplikacji. Pierwsza tworzy grę, dwie pozostałe dołączają na ten sam host i port.");
+        Label info = new Label("Uruchom 3 instancje aplikacji. Na jednym komputerze użyj hosta localhost. Na różnych komputerach w tej samej sieci wpisz adres IP komputera, który utworzył grę.");
         info.getStyleClass().add("small-info-label");
         info.setWrapText(true);
         info.setAlignment(Pos.CENTER);

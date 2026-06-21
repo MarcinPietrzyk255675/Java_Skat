@@ -11,8 +11,8 @@ import pl.skat.core.Karta;
 import java.io.InputStream;
 
 final class MiniCardView extends StackPane {
-    private static final double WIDTH = 42;
-    private static final double HEIGHT = 63;
+    private static final double WIDTH = 76;
+    private static final double HEIGHT = 114;
 
     private MiniCardView(Karta card, boolean back) {
         setPrefSize(WIDTH, HEIGHT);

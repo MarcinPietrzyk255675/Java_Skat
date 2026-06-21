@@ -10,7 +10,6 @@ import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
@@ -27,18 +26,19 @@ import java.util.function.Consumer;
 
 public class SkatTableView extends BorderPane {
     private final PlayerHandView playerHandView = new PlayerHandView();
-    private final ScrollPane playerHandScrollPane = new ScrollPane(playerHandView);
+    private final StackPane playerHandContainer = new StackPane(playerHandView);
     private final StackPane trickTable = new StackPane();
     private final VBox ownTrickSlot = new VBox(2);
     private final VBox leftTrickSlot = new VBox(2);
     private final VBox rightTrickSlot = new VBox(2);
-    private final HBox skatBox = new HBox(2);
-    private final FlowPane rightOpponentCardsBox = new FlowPane(1, 1);
-    private final FlowPane leftOpponentCardsBox = new FlowPane(1, 1);
-    private final FlowPane contractControls = new FlowPane(8, 8);
+    private final HBox skatBox = new HBox(0);
+    private final FlowPane rightOpponentCardsBox = new FlowPane(0, 0);
+    private final FlowPane leftOpponentCardsBox = new FlowPane(0, 0);
+    private final FlowPane contractControls = new FlowPane(4, 4);
 
     private final Label rightOpponentLabel = new Label();
     private final Label leftOpponentLabel = new Label();
+    private final Label ownPlayerLabel = new Label();
     private final Label dealLabel = new Label();
     private final Label positionsLabel = new Label();
     private final Label bidLabel = new Label();
@@ -75,16 +75,20 @@ public class SkatTableView extends BorderPane {
     public SkatTableView() {
         getStyleClass().add("skat-table");
         configureContractControls();
+        playerHandView.setManaged(false);
         createTopArea();
         createLeftArea();
         createRightArea();
         createCenterArea();
         createBottomArea();
+        playerHandContainer.widthProperty().addListener((observable, oldValue, newValue) -> updateHandScale());
+        playerHandContainer.heightProperty().addListener((observable, oldValue, newValue) -> updateHandScale());
     }
 
     public void render(GameSnapshot snapshot) {
         lastSnapshot = snapshot;
         playerHandView.setCards(snapshot.playerHand());
+        updateHandScale();
         setCurrentTrick(snapshot);
         setSkat(snapshot.skat(), snapshot.skatVisible(), snapshot.phase());
         setOpponentCards(snapshot);
@@ -95,7 +99,8 @@ public class SkatTableView extends BorderPane {
         positionsLabel.setText(snapshot.positionSummary());
         contractLabel.setText("Gra: " + snapshot.contractName());
         statusLabel.setText(snapshot.status());
-        collectedCardsLabel.setText("Zebrane karty: " + snapshot.collectedCardCount());
+        ownPlayerLabel.setText(snapshot.playerName() + " | wynik: " + snapshot.playerScore() + " pkt | zebrane karty: " + snapshot.collectedCardCount());
+        collectedCardsLabel.setText("");
 
         boolean contractSelection = snapshot.phase() == GamePhase.CONTRACT_SELECTION;
         boolean skatExchange = snapshot.phase() == GamePhase.SKAT_EXCHANGE;
@@ -234,7 +239,7 @@ public class SkatTableView extends BorderPane {
         VBox rightArea = sideArea();
         rightOpponentLabel.getStyleClass().add("opponent-label");
         rightOpponentCardsBox.setAlignment(Pos.CENTER);
-        rightOpponentCardsBox.setPrefWrapLength(88);
+        rightOpponentCardsBox.setPrefWrapLength(152);
         rightArea.getChildren().addAll(rightOpponentLabel, rightOpponentCardsBox);
         setRight(rightArea);
     }
@@ -243,34 +248,32 @@ public class SkatTableView extends BorderPane {
         VBox leftArea = sideArea();
         leftOpponentLabel.getStyleClass().add("opponent-label");
         leftOpponentCardsBox.setAlignment(Pos.CENTER);
-        leftOpponentCardsBox.setPrefWrapLength(88);
-        collectedCardsLabel.getStyleClass().add("small-info-label");
-        collectedCardsLabel.setWrapText(true);
-        leftArea.getChildren().addAll(leftOpponentLabel, leftOpponentCardsBox, collectedCardsLabel);
+        leftOpponentCardsBox.setPrefWrapLength(152);
+        leftArea.getChildren().addAll(leftOpponentLabel, leftOpponentCardsBox);
         setLeft(leftArea);
     }
 
     private VBox sideArea() {
-        VBox area = new VBox(8);
+        VBox area = new VBox(4);
         area.setAlignment(Pos.TOP_CENTER);
-        area.setPadding(new Insets(6));
-        area.setPrefWidth(104);
-        area.setMinWidth(96);
-        area.setMaxWidth(112);
+        area.setPadding(new Insets(0));
+        area.setPrefWidth(164);
+        area.setMinWidth(152);
+        area.setMaxWidth(184);
         area.getStyleClass().add("side-player-area");
         return area;
     }
 
     private void createCenterArea() {
         StackPane centerArea = new StackPane();
-        centerArea.setPadding(new Insets(6));
+        centerArea.setPadding(new Insets(0));
         centerArea.getStyleClass().add("table-center");
-        centerArea.setMinHeight(210);
-        centerArea.setPrefHeight(240);
+        centerArea.setMinHeight(198);
+        centerArea.setPrefHeight(208);
 
-        trickTable.setMinSize(330, 190);
-        trickTable.setPrefSize(380, 210);
-        trickTable.setMaxSize(430, 230);
+        trickTable.setMinSize(332, 188);
+        trickTable.setPrefSize(360, 198);
+        trickTable.setMaxSize(380, 208);
         trickTable.getStyleClass().add("trick-table");
 
         configureTrickSlot(ownTrickSlot, Pos.CENTER);
@@ -296,26 +299,27 @@ public class SkatTableView extends BorderPane {
 
     private void configureTrickSlot(VBox slot, Pos alignment) {
         slot.setAlignment(alignment);
-        slot.setMinSize(108, 150);
-        slot.setPrefSize(112, 152);
-        slot.setMaxSize(118, 158);
+        slot.setMinSize(122, 188);
+        slot.setPrefSize(124, 192);
+        slot.setMaxSize(128, 196);
         slot.getStyleClass().add("trick-slot");
     }
 
     private void createBottomArea() {
-        VBox bottomArea = new VBox(6);
+        VBox bottomArea = new VBox(2);
         bottomArea.setAlignment(Pos.CENTER);
-        bottomArea.setPadding(new Insets(4, 8, 8, 8));
+        bottomArea.setPadding(new Insets(0));
         bottomArea.getStyleClass().add("bottom-player-area");
 
-        playerHandScrollPane.setFitToHeight(true);
-        playerHandScrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        playerHandScrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        playerHandScrollPane.setPannable(true);
-        playerHandScrollPane.setMinHeight(CardView.CARD_HEIGHT + 18);
-        playerHandScrollPane.setPrefHeight(CardView.CARD_HEIGHT + 22);
-        playerHandScrollPane.setMaxHeight(CardView.CARD_HEIGHT + 30);
-        VBox.setVgrow(playerHandScrollPane, Priority.NEVER);
+        ownPlayerLabel.getStyleClass().add("small-info-label");
+        ownPlayerLabel.setAlignment(Pos.CENTER);
+        ownPlayerLabel.setMaxWidth(Double.MAX_VALUE);
+
+        playerHandContainer.setAlignment(Pos.CENTER);
+        playerHandContainer.setMinHeight(CardView.CARD_HEIGHT + 2);
+        playerHandContainer.setPrefHeight(CardView.CARD_HEIGHT + 4);
+        playerHandContainer.setMaxHeight(CardView.CARD_HEIGHT + 6);
+        VBox.setVgrow(playerHandContainer, Priority.NEVER);
 
         contractControls.setAlignment(Pos.CENTER);
         contractControls.setMaxWidth(Double.MAX_VALUE);
@@ -331,7 +335,7 @@ public class SkatTableView extends BorderPane {
                 confirmContractButton
         );
 
-        FlowPane actionButtons = new FlowPane(6, 6);
+        FlowPane actionButtons = new FlowPane(4, 4);
         actionButtons.setAlignment(Pos.CENTER);
         actionButtons.setMaxWidth(Double.MAX_VALUE);
         actionButtons.getChildren().addAll(
@@ -398,8 +402,32 @@ public class SkatTableView extends BorderPane {
             }
         });
 
-        bottomArea.getChildren().addAll(playerHandScrollPane, contractControls, actionButtons);
+        bottomArea.getChildren().addAll(ownPlayerLabel, playerHandContainer, contractControls, actionButtons);
         setBottom(bottomArea);
+    }
+
+
+    private void updateHandScale() {
+        int cardCount = Math.max(1, playerHandView.getChildren().size());
+        double availableWidth = playerHandContainer.getWidth();
+        double availableHeight = playerHandContainer.getHeight();
+        if (availableWidth <= 0 || availableHeight <= 0) {
+            playerHandView.setScaleX(1.0);
+            playerHandView.setScaleY(1.0);
+            playerHandView.setLayoutX(0);
+            playerHandView.setLayoutY(0);
+            return;
+        }
+
+        double naturalWidth = cardCount * CardView.CARD_WIDTH;
+        double naturalHeight = CardView.CARD_HEIGHT;
+        double scale = Math.min(1.0, availableWidth / naturalWidth);
+
+        playerHandView.resize(naturalWidth, naturalHeight);
+        playerHandView.setScaleX(scale);
+        playerHandView.setScaleY(scale);
+        playerHandView.setLayoutX((availableWidth - naturalWidth) / 2.0);
+        playerHandView.setLayoutY((availableHeight - naturalHeight) / 2.0);
     }
 
     private GameContract selectedContract() {
@@ -482,10 +510,14 @@ public class SkatTableView extends BorderPane {
     }
 
     private void setOpponentCards(GameSnapshot snapshot) {
-        rightOpponentLabel.setText(snapshot.topOpponentName() + ": " + snapshot.topOpponentCardCount()
-                + " kart" + (snapshot.topOpponentCardsVisible() ? " (otwarte)" : ""));
-        leftOpponentLabel.setText(snapshot.leftOpponentName() + ": " + snapshot.leftOpponentCardCount()
-                + " kart" + (snapshot.leftOpponentCardsVisible() ? " (otwarte)" : ""));
+        rightOpponentLabel.setText(snapshot.topOpponentName()
+                + "\nwynik: " + snapshot.topOpponentScore() + " pkt"
+                + "\n" + snapshot.topOpponentCardCount() + " kart"
+                + (snapshot.topOpponentCardsVisible() ? " (otwarte)" : ""));
+        leftOpponentLabel.setText(snapshot.leftOpponentName()
+                + "\nwynik: " + snapshot.leftOpponentScore() + " pkt"
+                + "\n" + snapshot.leftOpponentCardCount() + " kart"
+                + (snapshot.leftOpponentCardsVisible() ? " (otwarte)" : ""));
 
         fillMiniCards(rightOpponentCardsBox, snapshot.topOpponentHand(), snapshot.topOpponentCardCount(),
                 snapshot.topOpponentCardsVisible());

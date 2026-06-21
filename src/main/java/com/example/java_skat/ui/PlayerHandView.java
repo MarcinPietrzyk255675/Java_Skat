@@ -14,7 +14,7 @@ public class PlayerHandView extends HBox {
 
     public PlayerHandView() {
         setSpacing(0);
-        setAlignment(Pos.CENTER_LEFT);
+        setAlignment(Pos.CENTER);
         getStyleClass().add("player-hand");
     }
 
