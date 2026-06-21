@@ -38,12 +38,21 @@ public class GameController {
 		PlayerId forehand = playerWithPosition(PlayerPosition.FOREHAND);
 		PlayerId middlehand = playerWithPosition(PlayerPosition.MIDDLEHAND);
 
+
+		dealState.setPhase(GamePhase.BIDDING);
 		dealState.setBiddingStatus(BiddingStatus.IN_PROGRESS);
 		dealState.setBiddingAsker(middlehand);
 		dealState.setBiddingResponder(forehand);
 		dealState.setCurrentBid(0);
 		dealState.setHighestBidder(null);
 		dealState.setRearhandJoinedBidding(false);
+	}
+
+	private void finishBidding(PlayerId biddingWinner) {
+		dealState.setHighestBidder(biddingWinner);
+		dealState.setDeclarer(biddingWinner);
+		dealState.setBiddingStatus(BiddingStatus.FINISHED);
+		dealState.setPhase(GamePhase.DECLARER_DECISION);
 	}
 
 	public DealState getDealState() {
@@ -124,7 +133,52 @@ public class GameController {
 			return;
 		}
 
-		dealState.setBiddingStatus(BiddingStatus.FINISHED);
+		finishBidding(remainingPlayer);
+	}
+
+	public void takeSkat(PlayerId playerId) {
+		if (dealState.getPhase() != GamePhase.DECLARER_DECISION) {
+			throw new IllegalStateException("It is not the time to take the skat");
+		}
+		if (playerId != dealState.getDeclarer()) {
+			throw new IllegalStateException("Only the declarer can take the skat");
+		}
+
+		dealState.getHand(playerId).addAll(dealState.getSkat());
+		dealState.getSkat().clear();
+
+		dealState.getRodzajGry().hand = false;
+		dealState.setPhase(GamePhase.SKAT_EXCHANGE);
+	}
+
+	public void chooseHandGame(PlayerId playerId) {
+		if (dealState.getPhase() != GamePhase.DECLARER_DECISION) {
+			throw new IllegalStateException("It is not the time to declare hand game");
+		}
+		if (playerId != dealState.getDeclarer()) {
+			throw new IllegalStateException("Only the declarer can declare hand game");
+		}
+
+		dealState.getRodzajGry().hand = true;
+		dealState.setPhase(GamePhase.CONTRACT_SELECTION);
+	}
+
+	public void discardToSkat(PlayerId playerId, Karta card) {
+		if (dealState.getPhase() != GamePhase.SKAT_EXCHANGE) {
+			throw new IllegalStateException("It is not the time to discard to skat");
+		}
+		if (playerId != dealState.getDeclarer()) {
+			throw new IllegalStateException("Only the declarer can discard to skat");
+		}
+		if (!dealState.getHand(playerId).remove(card)) {
+			throw new IllegalStateException("Declarer does not have this card in hand");
+		}
+
+		dealState.getSkat().add(card);
+
+		if (dealState.getSkat().size() == 2) {
+			dealState.setPhase(GamePhase.CONTRACT_SELECTION);
+		}
 	}
 
 }

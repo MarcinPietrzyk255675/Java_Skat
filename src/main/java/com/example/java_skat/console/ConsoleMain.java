@@ -3,6 +3,7 @@ package com.example.java_skat.console;
 import com.example.java_skat.game.BidLadder;
 import com.example.java_skat.game.GameController;
 import com.example.java_skat.game.PlayerId;
+import pl.skat.core.Karta;
 
 public class ConsoleMain {
 	public static void main(String[] args) {
@@ -51,6 +52,29 @@ public class ConsoleMain {
 
 			System.out.println(
 					"Zwycięzca licytacji: " + gameController.getDealState().getHighestBidder().getDisplayName());
+
+			PlayerId declarer = gameController.getDealState().getDeclarer();
+
+			System.out.println("Rozgrywający: " + declarer.getDisplayName());
+			System.out.println("Faza po licytacji: " + gameController.getDealState().getPhase());
+
+			gameController.takeSkat(declarer);
+
+			System.out.println("Rozgrywający bierze skat.");
+			System.out.println("Liczba kart rozgrywającego: " + gameController.getDealState().getHand(declarer).size());
+			System.out.println("Liczba kart w skacie: " + gameController.getDealState().getSkat().size());
+			System.out.println("Faza: " + gameController.getDealState().getPhase());
+
+			Karta firstDiscard = gameController.getDealState().getHand(declarer).get(0);
+			Karta secondDiscard = gameController.getDealState().getHand(declarer).get(1);
+
+			gameController.discardToSkat(declarer, firstDiscard);
+			gameController.discardToSkat(declarer, secondDiscard);
+
+			System.out.println("Po odłożeniu 2 kart:");
+			System.out.println("Liczba kart rozgrywającego: " + gameController.getDealState().getHand(declarer).size());
+			System.out.println("Liczba kart w skacie: " + gameController.getDealState().getSkat().size());
+			System.out.println("Faza: " + gameController.getDealState().getPhase());
 
 		}
 	}
