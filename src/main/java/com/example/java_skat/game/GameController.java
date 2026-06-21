@@ -232,9 +232,21 @@ public class GameController {
 
 			dealState.getLastCompletedTrick().clear();
 			dealState.getLastCompletedTrick().addAll(dealState.getCurrentTrick());
+
+			for (PlayerCard playerCard : dealState.getCurrentTrick()) {
+				dealState.getWonCards(winner).add(playerCard.card());
+			}
+
 			dealState.getCurrentTrick().clear();
 
+			dealState.incrementCompletedTrickCount();
+
 			dealState.setLastTrickWinner(winner);
+			if (dealState.getCompletedTrickCount() == 10) {
+				dealState.setCurrentPlayer(null);
+				dealState.setPhase(GamePhase.DEAL_FINISHED);
+				return;
+			}
 			dealState.setCurrentPlayer(winner);
 			return;
 		}

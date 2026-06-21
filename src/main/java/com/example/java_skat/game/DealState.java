@@ -31,10 +31,16 @@ public class DealState {
 	private final List<PlayerCard> lastCompletedTrick = new ArrayList<>();
 	private PlayerId lastTrickWinner;
 
+	private final Map<PlayerId, List<Karta>> wonCards = new EnumMap<>(PlayerId.class);
+	private int completedTrickCount = 0;
+
+
 	public DealState() {
 		for (PlayerId player : PlayerId.values()) {
 			hands.put(player, new ArrayList<>());
+			wonCards.put(player, new ArrayList<>());
 		}
+
 	}
 
 	public List<Karta> getHand(PlayerId player) {
@@ -147,5 +153,17 @@ public class DealState {
 
 	public void setLastTrickWinner(PlayerId lastTrickWinner) {
 		this.lastTrickWinner = lastTrickWinner;
+	}
+
+	public List<Karta> getWonCards(PlayerId player) {
+		return wonCards.get(player);
+	}
+
+	public int getCompletedTrickCount() {
+		return completedTrickCount;
+	}
+
+	public void incrementCompletedTrickCount() {
+		completedTrickCount++;
 	}
 }

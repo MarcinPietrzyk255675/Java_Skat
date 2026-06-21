@@ -11,7 +11,7 @@ public class ConsoleMain {
 		System.out.println("Następna po 18: " + BidLadder.nextAfter(18).orElseThrow());
 		System.out.println("Następna po 20: " + BidLadder.nextAfter(20).orElseThrow());
 		GameController gameController = new GameController();
-		for (int i = 0; i < 3; i++) {
+		for (int i = 0; i < 1; i++) {
 
 
 			gameController.dealCards();
@@ -86,34 +86,39 @@ public class ConsoleMain {
 
 			System.out.println("Pierwszy gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
 
-			PlayerId firstPlayer = gameController.getDealState().getCurrentPlayer();
-			Karta firstCard = firstLegalCard(gameController, firstPlayer);
-			gameController.playCard(firstPlayer, firstCard);
+			while (gameController.getDealState().getPhase() == com.example.java_skat.game.GamePhase.PLAYING) {
+				System.out.println();
+				System.out.println("Lewa " + (gameController.getDealState().getCompletedTrickCount() + 1));
 
-			System.out.println(firstPlayer.getDisplayName() + " zagrał: " + firstCard);
-			System.out.println("Teraz gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
+				for (int cardNumber = 0; cardNumber < 3; cardNumber++) {
+					PlayerId currentPlayer = gameController.getDealState().getCurrentPlayer();
+					Karta card = firstLegalCard(gameController, currentPlayer);
 
-			PlayerId secondPlayer = gameController.getDealState().getCurrentPlayer();
-			Karta secondCard = firstLegalCard(gameController, secondPlayer);
-			gameController.playCard(secondPlayer, secondCard);
+					gameController.playCard(currentPlayer, card);
 
-			System.out.println(secondPlayer.getDisplayName() + " zagrał: " + secondCard);
-			System.out.println("Teraz gra: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
+					System.out.println(currentPlayer.getDisplayName() + " zagrał: " + card);
+				}
 
-			PlayerId thirdPlayer = gameController.getDealState().getCurrentPlayer();
-			Karta thirdCard = firstLegalCard(gameController, thirdPlayer);
-			gameController.playCard(thirdPlayer, thirdCard);
+				System.out.println("Karty w zakończonej lewie:");
+				gameController.getDealState().getLastCompletedTrick().forEach(playedCard -> System.out.println(
+						playedCard.playerId().getDisplayName() + ": " + playedCard.card()));
 
-			System.out.println(thirdPlayer.getDisplayName() + " zagrał: " + thirdCard);
+				System.out.println(
+						"Lewę wygrał: " + gameController.getDealState().getLastTrickWinner().getDisplayName());
 
-			System.out.println("Karty w zakończonej lewie:");
-			gameController.getDealState().getLastCompletedTrick().forEach(playedCard -> System.out.println(
-					playedCard.playerId().getDisplayName() + ": " + playedCard.card()));
+				if (gameController.getDealState().getPhase() == com.example.java_skat.game.GamePhase.PLAYING) {
+					System.out.println("Następną lewę zaczyna: " +
+					                   gameController.getDealState().getCurrentPlayer().getDisplayName());
+				}
+			}
+			System.out.println();
+			System.out.println("Rozdanie zakończone.");
+			System.out.println("Faza: " + gameController.getDealState().getPhase());
 
-			System.out.println("Lewę wygrał: " + gameController.getDealState().getLastTrickWinner().getDisplayName());
-
-			System.out.println(
-					"Następną lewę zaczyna: " + gameController.getDealState().getCurrentPlayer().getDisplayName());
+			for (PlayerId player : PlayerId.values()) {
+				System.out.println(player.getDisplayName() + " zebrał kart: " +
+				                   gameController.getDealState().getWonCards(player).size());
+			}
 		}
 	}
 
