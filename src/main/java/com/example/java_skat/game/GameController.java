@@ -159,10 +159,11 @@ public class GameController {
 		if (playerId != dealState.getDeclarer()) {
 			throw new IllegalStateException("Only the declarer can declare hand game");
 		}
-
 		dealState.getRodzajGry().hand = true;
 		dealState.setPhase(GamePhase.CONTRACT_SELECTION);
 	}
+
+
 
 	public void discardToSkat(PlayerId playerId, Karta card) {
 		if (dealState.getPhase() != GamePhase.SKAT_EXCHANGE) {
@@ -180,24 +181,6 @@ public class GameController {
 		if (dealState.getSkat().size() == 2) {
 			dealState.setPhase(GamePhase.CONTRACT_SELECTION);
 		}
-	}
-
-	public void declareColorGame(PlayerId playerId, Kolor trumpColor) {
-		if (dealState.getPhase() != GamePhase.CONTRACT_SELECTION) {
-			throw new IllegalStateException("It is not the time to declare color game");
-		}
-		if (playerId != dealState.getDeclarer()) {
-			throw new IllegalStateException("Only the declarer can declare color game");
-		}
-
-		dealState.getRodzajGry().typ = TypGry.KOLOROWA;
-		dealState.getRodzajGry().kolor = trumpColor;
-
-		dealState.getDeclarerStartingHand().clear();
-		dealState.getDeclarerStartingHand().addAll(dealState.getHand(playerId));
-
-		dealState.setCurrentPlayer(playerWithPosition(PlayerPosition.FOREHAND));
-		dealState.setPhase(GamePhase.PLAYING);
 	}
 
 	private PlayerId nextPlayerAfter(PlayerId playerId) {
@@ -255,36 +238,69 @@ public class GameController {
 		dealState.setCurrentPlayer(nextPlayerAfter(playerId));
 	}
 
+	//	public WynikGry calculateCoreResult() {
+	//		if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
+	//			throw new IllegalStateException("Deal is not finished yet");
+	//		}
+	//
+	//		if (dealState.getDeclarerStartingHand().size() != 10) {
+	//			throw new IllegalStateException("Declarer must have exactly 10 cards for scoring");
+	//		}
+	//
+	//		if (dealState.getSkat().size() != 2) {
+	//			throw new IllegalStateException("Skat must contain exactly 2 cards for scoring");
+	//		}
+	//
+	//		Gracz coreDeclarer = new Gracz();
+	//		Gracz coreOpponentOne = new Gracz();
+	//		Gracz coreOpponentTwo = new Gracz();
+	//
+	//		coreDeclarer.ustawPosiadaneKarty(new ArrayList<>(dealState.getDeclarerStartingHand()));
+	//		coreDeclarer.ustawZebraneKarty(new ArrayList<>(dealState.getWonCards(dealState.getDeclarer())));
+	//
+	//		Skat coreSkat = new Skat();
+	//		coreSkat.ustawKarta1(dealState.getSkat().get(0));
+	//		coreSkat.ustawKarta2(dealState.getSkat().get(1));
+	//
+	//		Rozdanie coreDeal = new Rozdanie(coreDeclarer, coreOpponentOne, coreOpponentTwo);
+	//		coreDeal.ustawRodzajGry(dealState.getRodzajGry());
+	//		coreDeal.ustawWartoscLicytacji(dealState.getCurrentBid());
+	//		coreDeal.ustawSkat(coreSkat);
+	//
+	//		return coreDeal.obliczWynik();
+	//	}
+
 	public WynikGry calculateCoreResult() {
-        if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
-                throw new IllegalStateException("Deal is not finished yet");
+		if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
+			throw new IllegalStateException("Deal is not finished yet");
+		}
+
+		return CoreSkat.calculateResult(dealState);
+	}
+
+	public int calculateCoreGameValue() {
+		if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
+			throw new IllegalStateException("Deal is not finished yet");
+		}
+
+		return CoreSkat.calculateGameValue(dealState);
+	}
+
+	public void declareColorGame(PlayerId playerId, Kolor trumpColor) {
+        if (dealState.getPhase() != GamePhase.CONTRACT_SELECTION) {
+                throw new IllegalStateException("It is not the time to declare color game");
+        }
+        if (playerId != dealState.getDeclarer()) {
+                throw new IllegalStateException("Only the declarer can declare color game");
         }
 
-        if (dealState.getDeclarerStartingHand().size() != 10) {
-                throw new IllegalStateException("Declarer must have exactly 10 cards for scoring");
-        }
+        dealState.setRodzajGry(CoreSkat.colorGame(trumpColor, dealState.getRodzajGry().hand));
 
-        if (dealState.getSkat().size() != 2) {
-                throw new IllegalStateException("Skat must contain exactly 2 cards for scoring");
-        }
+        dealState.getDeclarerStartingHand().clear();
+        dealState.getDeclarerStartingHand().addAll(dealState.getHand(playerId));
 
-        Gracz coreDeclarer = new Gracz();
-        Gracz coreOpponentOne = new Gracz();
-        Gracz coreOpponentTwo = new Gracz();
-
-        coreDeclarer.ustawPosiadaneKarty(new ArrayList<>(dealState.getDeclarerStartingHand()));
-        coreDeclarer.ustawZebraneKarty(new ArrayList<>(dealState.getWonCards(dealState.getDeclarer())));
-
-        Skat coreSkat = new Skat();
-        coreSkat.ustawKarta1(dealState.getSkat().get(0));
-        coreSkat.ustawKarta2(dealState.getSkat().get(1));
-
-        Rozdanie coreDeal = new Rozdanie(coreDeclarer, coreOpponentOne, coreOpponentTwo);
-        coreDeal.ustawRodzajGry(dealState.getRodzajGry());
-        coreDeal.ustawWartoscLicytacji(dealState.getCurrentBid());
-        coreDeal.ustawSkat(coreSkat);
-
-        return coreDeal.obliczWynik();
+        dealState.setCurrentPlayer(playerWithPosition(PlayerPosition.FOREHAND));
+        dealState.setPhase(GamePhase.PLAYING);
 }
 
 }
