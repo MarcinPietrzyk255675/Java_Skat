@@ -2,7 +2,7 @@ package com.example.java_skat.game;
 
 public enum GamePhase {
 	BIDDING,
-	DECLARER_DECISION,
+	TAKING_SKAT,
 	SKAT_EXCHANGE,
 	CONTRACT_SELECTION,
 	PLAYING,

@@ -7,7 +7,7 @@ import java.util.TreeSet;
 
 public final class BidLadder {
 	private static final int MIN_MULTIPLIER = 2;
-	private static final int MAX_MULTIPLIER = 18;
+	private static final int MAX_MULTIPLIER = 12;
 
 	private static final int[] BIDS = createBids();
 

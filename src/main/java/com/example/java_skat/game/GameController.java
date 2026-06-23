@@ -3,6 +3,7 @@ package com.example.java_skat.game;
 import pl.skat.core.*;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
 
 public class GameController {
@@ -15,6 +16,14 @@ public class GameController {
 
 
 	private int dealNumber = 0;
+
+	private final EnumMap<PlayerId, ArrayList<WynikGry>> totalScores = new EnumMap<>(PlayerId.class);
+
+	public GameController() {
+		for (PlayerId player : PlayerId.values()) {
+			totalScores.put(player, new ArrayList<>());
+		}
+	}
 
 	public void dealCards() {
 		if (dealNumber >= MAX_DEALS) {
@@ -53,7 +62,7 @@ public class GameController {
 		dealState.setHighestBidder(biddingWinner);
 		dealState.setDeclarer(biddingWinner);
 		dealState.setBiddingStatus(BiddingStatus.FINISHED);
-		dealState.setPhase(GamePhase.DECLARER_DECISION);
+		dealState.setPhase(GamePhase.TAKING_SKAT);
 	}
 
 	public DealState getDealState() {
@@ -138,7 +147,7 @@ public class GameController {
 	}
 
 	public void takeSkat(PlayerId playerId) {
-		if (dealState.getPhase() != GamePhase.DECLARER_DECISION) {
+		if (dealState.getPhase() != GamePhase.TAKING_SKAT) {
 			throw new IllegalStateException("It is not the time to take the skat");
 		}
 		if (playerId != dealState.getDeclarer()) {
@@ -148,22 +157,8 @@ public class GameController {
 		dealState.getHand(playerId).addAll(dealState.getSkat());
 		dealState.getSkat().clear();
 
-		dealState.getRodzajGry().hand = false;
 		dealState.setPhase(GamePhase.SKAT_EXCHANGE);
 	}
-
-	public void chooseHandGame(PlayerId playerId) {
-		if (dealState.getPhase() != GamePhase.DECLARER_DECISION) {
-			throw new IllegalStateException("It is not the time to declare hand game");
-		}
-		if (playerId != dealState.getDeclarer()) {
-			throw new IllegalStateException("Only the declarer can declare hand game");
-		}
-		dealState.getRodzajGry().hand = true;
-		dealState.setPhase(GamePhase.CONTRACT_SELECTION);
-	}
-
-
 
 	public void discardToSkat(PlayerId playerId, Karta card) {
 		if (dealState.getPhase() != GamePhase.SKAT_EXCHANGE) {
@@ -238,38 +233,6 @@ public class GameController {
 		dealState.setCurrentPlayer(nextPlayerAfter(playerId));
 	}
 
-	//	public WynikGry calculateCoreResult() {
-	//		if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
-	//			throw new IllegalStateException("Deal is not finished yet");
-	//		}
-	//
-	//		if (dealState.getDeclarerStartingHand().size() != 10) {
-	//			throw new IllegalStateException("Declarer must have exactly 10 cards for scoring");
-	//		}
-	//
-	//		if (dealState.getSkat().size() != 2) {
-	//			throw new IllegalStateException("Skat must contain exactly 2 cards for scoring");
-	//		}
-	//
-	//		Gracz coreDeclarer = new Gracz();
-	//		Gracz coreOpponentOne = new Gracz();
-	//		Gracz coreOpponentTwo = new Gracz();
-	//
-	//		coreDeclarer.ustawPosiadaneKarty(new ArrayList<>(dealState.getDeclarerStartingHand()));
-	//		coreDeclarer.ustawZebraneKarty(new ArrayList<>(dealState.getWonCards(dealState.getDeclarer())));
-	//
-	//		Skat coreSkat = new Skat();
-	//		coreSkat.ustawKarta1(dealState.getSkat().get(0));
-	//		coreSkat.ustawKarta2(dealState.getSkat().get(1));
-	//
-	//		Rozdanie coreDeal = new Rozdanie(coreDeclarer, coreOpponentOne, coreOpponentTwo);
-	//		coreDeal.ustawRodzajGry(dealState.getRodzajGry());
-	//		coreDeal.ustawWartoscLicytacji(dealState.getCurrentBid());
-	//		coreDeal.ustawSkat(coreSkat);
-	//
-	//		return coreDeal.obliczWynik();
-	//	}
-
 	public WynikGry calculateCoreResult() {
 		if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
 			throw new IllegalStateException("Deal is not finished yet");
@@ -287,20 +250,49 @@ public class GameController {
 	}
 
 	public void declareColorGame(PlayerId playerId, Kolor trumpColor) {
-        if (dealState.getPhase() != GamePhase.CONTRACT_SELECTION) {
-                throw new IllegalStateException("It is not the time to declare color game");
-        }
-        if (playerId != dealState.getDeclarer()) {
-                throw new IllegalStateException("Only the declarer can declare color game");
-        }
+		if (dealState.getPhase() != GamePhase.CONTRACT_SELECTION) {
+			throw new IllegalStateException("It is not the time to declare color game");
+		}
+		if (playerId != dealState.getDeclarer()) {
+			throw new IllegalStateException("Only the declarer can declare color game");
+		}
 
-        dealState.setRodzajGry(CoreSkat.colorGame(trumpColor, dealState.getRodzajGry().hand));
+		dealState.setRodzajGry(CoreSkat.colorGame(trumpColor));
 
-        dealState.getDeclarerStartingHand().clear();
-        dealState.getDeclarerStartingHand().addAll(dealState.getHand(playerId));
+		dealState.getDeclarerStartingHand().clear();
+		dealState.getDeclarerStartingHand().addAll(dealState.getHand(playerId));
 
-        dealState.setCurrentPlayer(playerWithPosition(PlayerPosition.FOREHAND));
-        dealState.setPhase(GamePhase.PLAYING);
-}
+		dealState.setCurrentPlayer(playerWithPosition(PlayerPosition.FOREHAND));
+		dealState.setPhase(GamePhase.PLAYING);
+	}
+
+	public WynikGry finishDealAndSaveScore() {
+		if (dealState.getPhase() != GamePhase.DEAL_FINISHED) {
+			throw new IllegalStateException("Deal is not finished yet");
+		}
+
+		WynikGry result = CoreSkat.calculateResult(dealState);
+
+		PlayerId declarer = dealState.getDeclarer();
+		totalScores.get(declarer).add(result);
+		return result;
+	}
+
+	public int getPlayerScore(PlayerId playerId) {
+		ArrayList<WynikGry> scores = totalScores.get(playerId);
+		int sum = 0;
+		for (WynikGry score : scores) {
+			sum += score.wynik;
+		}
+		return sum;
+	}
+
+	public List<WynikGry> getPlayerResults(PlayerId playerId) {
+		return List.copyOf(totalScores.get(playerId));
+	}
+
+	public boolean isGameFinished() {
+		return dealNumber == MAX_DEALS && dealState != null && dealState.getPhase() == GamePhase.DEAL_FINISHED;
+	}
 
 }

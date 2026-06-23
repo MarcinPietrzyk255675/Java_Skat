@@ -16,11 +16,10 @@ public final class CoreSkat {
         private CoreSkat() {
         }
 
-        public static RodzajGry colorGame(Kolor trumpColor, boolean hand) {
+        public static RodzajGry colorGame(Kolor trumpColor) {
                 RodzajGry game = new RodzajGry();
                 game.typ = TypGry.KOLOROWA;
                 game.kolor = trumpColor;
-                game.hand = hand;
                 return game;
         }
 
@@ -74,7 +73,7 @@ public final class CoreSkat {
 
         public static int baseValueForColor(Kolor color) {
                 Rozdanie deal = new Rozdanie(new Gracz(), new Gracz(), new Gracz());
-                deal.ustawRodzajGry(colorGame(color, false));
+                deal.ustawRodzajGry(colorGame(color));
                 return deal.obliczWartoscBazowaGry();
         }
 
